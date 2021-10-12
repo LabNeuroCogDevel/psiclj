@@ -26,8 +26,6 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
     #+end_src
     
     then browse to http://localhost:3001/
-   
-   
 **** Run locally without command line fiddling
 ***** Windows Icon
       * copy with html/media in ~out/~ in same directory
@@ -69,8 +67,28 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 *** Build
     see ~Makefile~. depends on clojure. building an executable requires native image from graalvm
     
+**** windows
+     might need native-image.cmd ? https://github.com/babashka/babashka-sql-pods/blob/master/bb.edn
+     
 *** Databases
    ~postgresql~ and ~sqlite~ (default) are available as of 20211009. Where the DBs differ (upsert), there is specific code for each. see ~src/all.sql~. sql file is parsed by hugsql (yesql derivative). ~DATABASE_URL~ environment variable is supported for heroku. When it exists, the server use postgresql. DB libaries complicate generating the graalvm native image (static binary).
+
+   #+begin_src bash
+     sudo su - postgres -c "initdb --locale en_US.UTF-8 -D '/var/lib/postgres/data'"
+     #sudo vim /var/lib/postgres/data/pg_hba.conf # allow 127.0.0.1 for all users
+     # local   all             all                                     trust
+     sudo systemctl start postgresql
+     sudo -u postgres createdb testdb
+     psql -U postgres -h localhost testdb
+     # DATABASE_URL='postgresql://postgres:x@localhost:5432/testdb
+     # heroku addons:docs heroku-postgresql
+
+   #+end_src
+   
+**** sqlite3 native image on linux
+    https://github.com/xerial/sqlite-jdbc/issues/584
+    but 
+    https://github.com/mageddo/graalvm-examples/tree/59f1f1bf09894681edfddaa100b4504770ad0685/sqlite
 
 *** resources vs files
     the initial version used ~io/resources~ and bundled task data with the bytecode (uberjar or executable). This is great for providing a single executable for the task, but makes a much less flexible tool. It might be nice to provide a build option for revering back to the everything-all-together bundling. psiTurk uses this approach: clone the whole project and modify what you want.

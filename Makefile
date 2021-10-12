@@ -2,7 +2,8 @@
 all: psiclj
 
 psiclj: src/psiclj.clj
-	# sudo archlinux-java set java-11-graalvm
+	# sudo archlinux-java set java-16-graalvm
+	# export PATH="/usr/lib/jvm/java-16-graalvm/bin:$PATH"
 	clj -A:native-image
 
 psiclj.jar: src/psiclj.clj

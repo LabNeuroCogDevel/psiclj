@@ -66,8 +66,16 @@
          :classname "org.sqlite.JDBC"
          :subname "psiclj.sqlite3"})))
 
-(def DB (get-db-params))
+(defn DB [] (get-db-params))
 
+
+;; 20211012 - not needed for working postgres, and doesn't help sqlite
+;; need to tell native-image we use both postgres and sqlite so it's in the binary
+;(defn force-db-lib-load [con] (try
+;    (java.sql.DriverManager/getConnection con)
+;  (catch Exception e (str "junk db load for lib pull: " (.getMessage e)))))
+;(force-db-lib-load "jdbc:sqlite::memory")
+;(force-db-lib-load "jdbc:postgresql://localhost/postgres?user=postgres")
 
 (hugsql/def-db-fns "all.sql")
 (hugsql/def-sqlvec-fns "all.sql")
@@ -76,7 +84,7 @@
     (create-run-sqll db info)
     (create-run-psql db info)))
 
-(defn already-done? [run-data] (-> DB (run-by-id run-data) :finished_at nil? not))
+(defn already-done? [run-data] (-> (DB) (run-by-id run-data) :finished_at nil? not))
 
 
 ;; HTTP
@@ -90,7 +98,8 @@
   (routes
    (POST "/response" []
          (let [ task-resp (-> req :body slurp)
-               run-info (assoc (:params req) :json task-resp)]
+               run-info (assoc (:params req) :json task-resp)
+               DB (DB)]
            (resp/response {:ok (upload-json DB run-info)})))
            ;(let [run-info (:params req)]
            ;  (println run-info)
@@ -99,12 +108,12 @@
    (POST "/info" []
          (let [status
                (upload-system-info
-                DB (assoc (:params req)
+                (DB) (assoc (:params req)
                           :info (-> req :body slurp)))]
            (resp/response {:ok status})))
 
    (POST "/finish" []
-         (let [status (finish-run DB (:params req))]
+         (let [status (finish-run (DB) (:params req))]
            (resp/response {:ok status})))
 
    ;; TODO: add /csv that RA can used to save output (in addition to DB)
@@ -148,7 +157,8 @@
                 ;; TODO: try to get agent and maybe viewport from browser
                 ;; for :info
                 (let [run-info (assoc (:params req) :info "" :version @VERSION)
-                      index (str (io/file @path-root "index.html"))]
+                      index (str (io/file @path-root "index.html"))
+                      DB (DB)]
                   (if (already-done?  run-info)
                     (resp/response "already done!")
                     (do
@@ -173,11 +183,12 @@
 ;; exercise
 (defn excercise-db []
   (def run-data {:id "will" :task "test" :version "x" :run 1 :timepoint 1 :json "[]" :info "[]"})
+  (let [DB (DB)]
   (create-run-table DB)
   (already-done? run-data)
   (create-run DB (assoc run-data :info "[{system: \"none\"}]"))
   (upload-json DB (assoc run-data :json "[{data: [1,3]}]"))
-  (finish-run DB run-data))
+  (finish-run DB run-data)))
 
 
 ;; Main
@@ -217,8 +228,9 @@
     (check-file "not-found.html")
 
     ;; test out the DB (or die w/error)
-    (println (str "creating run table on " DB))
-    (create-run-table DB)
+    (let [DB (DB)]
+      (println (str "creating run table on " DB))
+      (create-run-table DB))
 
     ;; serve it up
     ;; kill if already running (repl)
