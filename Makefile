@@ -15,3 +15,8 @@ run-bin:  psiclj
 	PORT=3003 psiclj
 run-jar: psiclj.jar
 	PORT=3004 java -cp psiclj.jar clojure.main -m psiclj
+
+psiclj-heroku: Dockerfile.heroku src/*
+	docker build -t psiclj-build . -f Dockerfile.heroku
+	docker cp `docker create --rm psiclj-build`:/psiclj/psiclj $@
+

@@ -1,0 +1,11 @@
+psiclj
+psiclj.jar
+psiclj-heroku
+psiclj.sqlite3
+readme.org
+classes/
+Makefile
+.dockerignore
+.gitignore
+.git
+.localdburl

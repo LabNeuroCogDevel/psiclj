@@ -1,3 +1,8 @@
 classes/
 *build_artifacts.txt
 .cpcache/
+/psiclj
+psiclj.jar
+psiclj.sqlite3
+.localdburl
+psiclj-heroku

@@ -1,0 +1,28 @@
+FROM heroku/heroku:20
+# https://devcenter.heroku.com/articles/heroku-20-stack
+
+# for easier graalvm could use 
+# FROM ghcr.io/graalvm/graalvm-ce:latest
+# but want to make sure libs match what's used by heroku
+
+# jvm/graalvm will be installed here
+ENV PATH=/java/graalvm/bin:$PATH JAVA_HOME=/java/graalvm
+
+RUN mkdir /java && \
+  cd /java && \
+  wget --quiet https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-21.2.0/graalvm-ce-java16-linux-amd64-21.2.0.tar.gz && \
+  tar -xzf graalvm-ce-java*.tar.gz && \
+  rm graalvm*tar.gz && \
+  mv /java/graalvm* /java/graalvm && \
+  gu install native-image 
+
+# clojure
+RUN apt update && \
+  apt-get install -y rlwrap zlib1g-dev && \ 
+  curl -O https://download.clojure.org/install/linux-install-1.10.3.986.sh && \
+  bash linux-install-* && \
+  rm linux-install-*
+
+COPY . psiclj
+RUN cd psiclj && clj -A:native-image
+

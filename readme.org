@@ -15,17 +15,18 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 ** Usage
 *** Server
 
-    - should already have javascript task in ~out/~ 
+    - should already have javascript task in ~out/~ with at least an ~index.html~ and ~not-found.html~ file
     - start server (see `psiclj -h` for changing port and root path)
     - open in browser
 
-    Minimally, need ~out/index.html~ and ~out/not-found.html~ files before running:
+**** Development version 
+     Minimally, need ~out/index.html~ and ~out/not-found.html~ files before running:
 
-    #+begin_src bash
-    java -cp psiclj.jar clojure.main -m psiclj
-    #+end_src
+     #+begin_src bash
+       clojure -m psiclj
+     #+end_src
     
-    then browse to http://localhost:3001/
+     then browse to http://localhost:3001/
 **** Run locally without command line fiddling
 ***** Windows Icon
       * copy with html/media in ~out/~ in same directory
@@ -41,6 +42,9 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 ***** TODO heroku
       * must setup postgresql (sqlite file will not be on a persistent file system)
       * default setup looks to environment for ~PORT~ and ~DATABASE_URL~
+****** faking nodejs buildpack
+       we can use our binary for quick startup
+	https://medium.com/ki-labs-engineering/deploying-a-native-go-binary-on-heroku-6d4c955819d8
 
 *** Javascript setup
     Running ~psiclj~ alone doesn't do much. You'll likely want a javascript task to make use of the very simple API.
@@ -65,7 +69,7 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 ** Hacking
    
 *** Build
-    see ~Makefile~. depends on clojure. building an executable requires native image from graalvm
+    see ~Makefile~. depends on clojure. building an executable requires native image from graalvm. Setup for heroku in ~Dockerfile.heroku~
     
 **** windows
      might need native-image.cmd ? https://github.com/babashka/babashka-sql-pods/blob/master/bb.edn
