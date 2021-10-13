@@ -1,2 +1,10 @@
 #!/bin/sh
-wget https://github.com/LabNeuroCogDevel/psiclj/releases/download/v0.0.0/psiclj-heroku -O /usr/bin/psiclj-heroku
+release="https://github.com/LabNeuroCogDevel/psiclj/releases/download/v0.0.0/psiclj-heroku"
+
+outdir=$(pwd)/bin # $HOME/bin
+[ ! -d $outdir ] && mkdir $outdir
+wget $release -O $outdir/psiclj-heroku
+
+PROFILE_PATH="$BUILD_DIR/.profile.d/psiclj.sh"
+mkdir -p $(dirname $PROFILE_PATH)
+echo 'export PATH="$PATH:$release"' >> $PROFILE_PATH
