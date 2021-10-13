@@ -7,10 +7,10 @@ A http server with a simple API designed for experiment presentation. Bring your
 Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/article/10.3758/s13428-015-0642-8][web]], [[https://github.com/NYUCCL/psiTurk][github]])
 
 ** Goals
-   * Present a javascript/browser based experiment and record responses to a database. 
+   * Present an existing javascript/browser based experiment and record responses to a database. 
    * Run on cheap/free web hosting (heroku, openshift, self-host) with an eye toward integrating with Amazon Turk
    * Easily install and run within software-restricted hospital environments (MS Windows, user level permissions only)
-   * Easily edit on linux
+   * Easy development on linux (cf. EPrime)
 
 ** Usage
 *** Server
@@ -38,13 +38,18 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
       * consider reading from ini/settings for many tasks? (present on index page)
       * might be good to have a gui where a close button exists
 
-**** Run headless/remote
-***** TODO heroku
+**** Run Hosted
+***** heroku buildpack
+      #+begin_src bash
+	heroku buildpacks:add https://github.com/LabNeuroCogDevel/psiclj.git
+        heroku addons:create  heroku-postgresql
+	echo "web: psiclj-heroku -r out/" > Procfile
+      #+end_src
+
       * must setup postgresql (sqlite file will not be on a persistent file system)
       * default setup looks to environment for ~PORT~ and ~DATABASE_URL~
-****** faking nodejs buildpack
-       we can use our binary for quick startup
-	https://medium.com/ki-labs-engineering/deploying-a-native-go-binary-on-heroku-6d4c955819d8
+***** self host
+      run right from clojure as startup time is unlikely to be the issue it is with free dynamo's from heroku. set ~PORT=80~ and use the default sqlite3 backend, no postgresql needed.
 
 *** Javascript setup
     Running ~psiclj~ alone doesn't do much. You'll likely want a javascript task to make use of the very simple API.

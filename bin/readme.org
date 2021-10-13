@@ -1,0 +1,2 @@
+* Heroku build pack
+  this ~bin~ folder enables heroku to download the last binary release. Dynamos are often stopped and restart time for jvm/clojure is noticeable. Graalvm native-image mitigates this.
