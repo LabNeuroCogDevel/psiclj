@@ -1,10 +1,18 @@
 #!/bin/sh
 release="https://github.com/LabNeuroCogDevel/psiclj/releases/download/v0.0.0/psiclj-heroku"
 
-outdir=$(pwd)/bin # $HOME/bin
+# from 
+# https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest/blob/master/bin/compile
+echo "# compile step. script given '$*'"
+BUILD_DIR=${1:-} # same as $HOME?
+echo "# BUILD_DIR='$BUILD_DIR'. HOME='$HOME'"
+
+outdir=$BUILD_DIR/bin # $HOME/bin
 [ ! -d $outdir ] && mkdir $outdir
-wget $release -O $outdir/psiclj-heroku
+echo "# downloading to $outdir"
+wget --quiet $release -O $outdir/psiclj-heroku
 
 PROFILE_PATH="$BUILD_DIR/.profile.d/psiclj.sh"
+echo "# updating path via $PROFILE_PATH"
 mkdir -p $(dirname $PROFILE_PATH)
 echo 'export PATH="$PATH:$release"' >> $PROFILE_PATH
