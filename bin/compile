@@ -1,18 +1,30 @@
 #!/bin/sh
 release="https://github.com/LabNeuroCogDevel/psiclj/releases/download/v0.0.0/psiclj-heroku"
 
-# from 
+# script gets build directory as input. what is there eventually goes into home
+# which is probbly /app
+# do work in $BUILD_DIR, accessible later from $HOME
+
+# example output
+# # BUILD_DIR='/tmp/build_9xxx9999'. HOME='/app'
+# # downloading to /tmp/build_8eb7b6d0/bin
+# # updating path via /tmp/build_8eb7b6d0/.profile.d/psiclj.sh
+
+
+# used heroku-buildpack-ffmpeg-latest as template
 # https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest/blob/master/bin/compile
 echo "# compile step. script given '$*'"
-BUILD_DIR=${1:-} # same as $HOME?
+BUILD_DIR=${1:-} # later known as $HOME
 echo "# BUILD_DIR='$BUILD_DIR'. HOME='$HOME'"
 
-outdir=$BUILD_DIR/bin # $HOME/bin
-[ ! -d $outdir ] && mkdir $outdir
+outdir=$BUILD_DIR/bin # eventually becomes $HOME/bin
+[ ! -d $outdir ] && mkdir -p $outdir
+
 echo "# downloading to $outdir"
 wget --quiet $release -O $outdir/psiclj-heroku
 
+# heroku will source all ~/.profile.d/*
 PROFILE_PATH="$BUILD_DIR/.profile.d/psiclj.sh"
-echo "# updating path via $PROFILE_PATH"
+echo "# updating path via $PROFILE_PATH. but for $HOME/bin"
 mkdir -p $(dirname $PROFILE_PATH)
-echo 'export PATH="$PATH:$release"' >> $PROFILE_PATH
+echo 'export PATH="$PATH:$HOME/bin"' >> $PROFILE_PATH
