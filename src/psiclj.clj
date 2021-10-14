@@ -47,7 +47,11 @@
            "/" db
            "?user="  user
            "&password=" password
-           ;; "&sslmode=require"
+           ;; 'allow' and 'prefer' are not supported by JDBC driver
+           ;; choice is 'disable' or 'require' and ssl is the better default
+           ;; but it's annoying on devel, so have the option to disable it by setting
+           ;; export PSQLSSLQUERY="sslmode=disable"
+           (or (System/getenv "PSQLSSLQUERY") "&sslmode=require")
            ))
 (defn db-to-jdbc
   "parse DATABASE_URL to JDBC_DATABASE_URL
@@ -211,7 +215,7 @@
               ["-d" "--database DB"
                (str "psql url. looks to DATABASE_URL first. "
                     "like postgres://user:pass@host:port/db. "
-                    "TODO: IMPLEMENT")
+                    "TODO: IMPLEMENT. also see PSQLSSLQUERY='sslmode=disable'")
                :default nil]
               ["-h" "--help" "This message" :default false]]
         {:keys [options arguments summary errors]} (parse-opts args opts)

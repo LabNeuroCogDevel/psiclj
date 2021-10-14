@@ -10,11 +10,11 @@ psiclj.jar: src/psiclj.clj
 	clj -A:uberjar
 
 run-clj: .loaddburl 
-	PORT=3002 DATABASE_URL=`cat .localdburl` clojure -m psiclj
+	PSQLSSLQUERY=sslmode=disable PORT=3002 DATABASE_URL=`cat .localdburl` clojure -m psiclj
 run-bin:  psiclj
-	PORT=3003 psiclj
+	PSQLSSLQUERY=sslmode=disable PORT=3003 psiclj
 run-jar: psiclj.jar
-	PORT=3004 java -cp psiclj.jar clojure.main -m psiclj
+	PSQLSSLQUERY=sslmode=disable PORT=3004 java -cp psiclj.jar clojure.main -m psiclj
 
 psiclj-heroku: Dockerfile.heroku src/*
 	docker build -t psiclj-build . -f Dockerfile.heroku
