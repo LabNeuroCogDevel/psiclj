@@ -89,7 +89,10 @@
     (create-run-sqll db info)
     (create-run-psql db info)))
 
-(defn already-done? [run-data] (-> (DB) (run-by-id run-data) :finished_at nil? not))
+(defn already-done?
+  "did we already finish this run?"
+  [run-data]
+  (-> (DB) (run-by-id run-data) :finished_at nil? not))
 
 
 ;; HTTP

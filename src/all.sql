@@ -29,8 +29,8 @@ create table worker (
 
 --  ":1" result = a single record (hashmap)
 -- :name run-by-id :? :1
--- :doc Get all run info by id
-select * from run where worker_id = :id and task_name like :task
+-- :doc Get all run info by run info (id,task,timepoint,run,version)
+select * from run where worker_id = :id and task_name like :task and timepoint = :timepoint and run_number = :run and version = :version
 
 --  :n returns affected row count
 -- :name create-run-sqll :! :n
