@@ -25,7 +25,8 @@
 (def VERSION
   "pushed into DB so specific code can be annotated.
    think git checksum or tag"
-  (atom "20210909-init"))
+  (atom "20211024-taskname"))
+(def TASKNAME (atom "task"))
 (def path-root
   "where to find resources like css javascript etc.
   likely out/ if in same dir as clojurescript project main"
@@ -126,7 +127,11 @@
 (defroutes task-run-context
   (context "/:id/:task/:timepoint/:run"
            req
-           (task-run (assoc-in req [:params :version] @VERSION))))
+           (task-run (assoc-in req [:params :version] @VERSION)))
+
+  ;; TODO: report more than one task. need major overhall
+  (GET "/tasks" [] (resp/response {:tasks [@TASKNAME]})))
+
 (defn quick-info "where are we. used to debug"
   [req]
   (str  "  \npwd=" (-> (java.io.File. ".") .getAbsolutePath)
@@ -212,12 +217,15 @@
   (let [opts [["-p" "--port PORT"
                "port. tries env PORT first. default 3001"
                :default "3001"]
-              ["-r" "--root-path PATH/out. TOOD: DOESNT WORK. always looks for out relative to binary"
+              ["-r" "--root-path PATH/out. TODO: DOESNT WORK. always looks for out relative to binary"
                "path to index.html, not-found.html, resources root"
                :default @path-root]
               ["-v" "--version VERSION"
                "set code version inserted in DB"
                :default @VERSION]
+              ["-t" "--taskname TASKNAME"
+               "set the task name in id/TASKNAME/timepont/run not-found.html"
+               :default @TASKNAME]
               ["-d" "--database DB"
                (str "psql url. looks to DATABASE_URL first. "
                     "like postgres://user:pass@host:port/db. "
@@ -231,7 +239,10 @@
     ;; update settings from command parsing
     (reset! VERSION (:version options))
     (reset! path-root (:root-path options))
-    (println "settings: v=" @VERSION " r=" @path-root)
+    (reset! TASKNAME  (:taskname options))
+    (println "settings: v =" @VERSION
+             "; r =" @path-root
+             "; t =" @TASKNAME)
 
     ;; shouldn't continue if there isn't anything to serve
     (check-file "index.html")
