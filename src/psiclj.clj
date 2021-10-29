@@ -127,6 +127,11 @@
   (context "/:id/:task/:timepoint/:run"
            req
            (task-run (assoc-in req [:params :version] @VERSION))))
+(defn quick-info "where are we. used to debug"
+  [req]
+  (str  "  \npwd=" (-> (java.io.File. ".") .getAbsolutePath)
+        "  \nroot=" @path-root
+        "  \nreq=" (:uri req)))
 
 ;; 20211008 these simple functions were source of great headache
 ;; https://stackoverflow.com/questions/69501727/updated-atom-value-not-used-in-compojure-route/69502052#69502052
@@ -135,18 +140,19 @@
 ;; still TODO: confirm the same doesn't need to happen with @VERSION
 ;; -- that is: does defroutes evaluated each request and update @VERSION?
 ;;             will see in the DB after setting -v
+;; 20211029 add io/resource back if file doesn't exist. namely for built in not-found
 (defn slurp-root [fname]
-  (let [path (io/file @path-root fname) ]
+  (let [path (io/file @path-root fname)
+        ;; if no file, use resource (for not-found.html)
+        path (if (-> path .exists)
+               path
+               (io/resource fname))]
     (if path
       (slurp (str path))
       (str "cannot find " fname "!"))))
 (defn not-found-fn [req]
   {:status 404
-   :body ;; (slurp-root "not-found.html")
-   (str  "  \npwd=" (-> (java.io.File. ".") .getAbsolutePath)
-         "  \nroot=" @path-root
-         "  \nreq=" (:uri req))
-   })
+   :body (slurp-root "not-found.html")})
 (defn find-root
   "root from global atom.
   prefix with extra / if we are an absolute path
@@ -229,7 +235,7 @@
 
     ;; shouldn't continue if there isn't anything to serve
     (check-file "index.html")
-    (check-file "not-found.html")
+    ;;(check-file "not-found.html") ; will use built in if not available
 
     ;; test out the DB (or die w/error)
     (let [DB (DB)]

@@ -15,12 +15,12 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 ** Usage
 *** Server
 
-    - should already have javascript task in ~out/~ with at least an ~index.html~ and ~not-found.html~ file
+    - should already have javascript task in ~out/~ with at least an ~index.html~. built in ~not-found.html~ will be used when not within ~out/~
     - start server (see `psiclj -h` for changing port and root path)
     - open in browser
 
 **** Development version 
-     Minimally, need ~out/index.html~ and ~out/not-found.html~ files before running:
+     Minimally, you need a ~out/index.html~ file before running:
 
      #+begin_src bash
        clojure -m psiclj
@@ -40,14 +40,17 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 
 **** Run Hosted
 ***** heroku buildpack
+      see https://github.com/LabNeuroCogDevel/choice-landscape (esp `Procfile`)
+
       #+begin_src bash
 	heroku buildpacks:add https://github.com/LabNeuroCogDevel/psiclj.git
         heroku addons:create  heroku-postgresql
-	echo "web: psiclj-heroku -r out/" > Procfile
+	echo "web: psiclj-heroku -r out/ -v myversionid -t mytaskname" > Procfile
       #+end_src
 
       * must setup postgresql (sqlite file will not be on a persistent file system)
       * default setup looks to environment for ~PORT~ and ~DATABASE_URL~
+        
 ***** self host
       run right from clojure as startup time is unlikely to be the issue it is with free dynamo's from heroku. set ~PORT=80~ and use the default sqlite3 backend, no postgresql needed.
 
@@ -105,5 +108,5 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 * TODO
   * add Procfile and heroku documentation
   * and /quit route to shutdown server
-  * bundle not found page
-  * change index to form to redirect to task (RA interface). use basename of root-path as taskname
+  * counter balance routes (?cb=A, available to window.location, doesn't change routing)
+  * host multiple tasks? would require rework of @TASKNAME @root-path and routing functions
