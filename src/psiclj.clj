@@ -239,6 +239,9 @@
         port (Integer/parseInt (or (System/getenv "PORT")
                                    (:port options)))]
 
+    ;; checking if native-image included the html resources
+    ;; (print (str "have not found?" (not (nil? (io/resource "not-found.html"))) "\n"))
+
     ;; update settings from command parsing
     (reset! VERSION (:version options))
     (reset! path-root (:root-path options))

@@ -16,6 +16,7 @@
                                       "--initialize-at-build-time"
                                       "--no-fallback"
                                       "--allow-incomplete-classpath"
+                                      "-H:IncludeResources=.*html$"
                                       ;; optional native image name override
                                       ;"-H:Name=psiclj"
                                       ]
