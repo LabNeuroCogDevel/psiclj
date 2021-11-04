@@ -54,6 +54,9 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 ***** self host
       run right from clojure as startup time is unlikely to be the issue it is with free dynamo's from heroku. set ~PORT=80~ and use the default sqlite3 backend, no postgresql needed.
 
+**** Setup
+     * the ~out/extra~ directory is used for additional root-level routes (e.g http://task.herokuapp.com/testing.html from ~out/extra/testing.html~)
+
 *** Javascript setup
     Running ~psiclj~ alone doesn't do much. You'll likely want a javascript task to make use of the very simple API.
     * The server looks for ~index.html~ at a specified directory (default ~out/~) and serves it at "localhost:port/id/task/timepoint/run/".

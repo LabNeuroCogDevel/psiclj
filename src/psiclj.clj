@@ -191,10 +191,12 @@
            ;; use files! (this took a long time to understand!)
            (route/files "/" (find-root))) )
 
+;; default routes + root/extra for additional html pages
 (def app
   (routes
    pages
    (wrap-routes #'task-run-context json/wrap-json-response)
+   (route/files "/" {:root (str @path-root "/extra") :allow-symlinks? true})
    (route/not-found not-found-fn)))
 
 
@@ -221,7 +223,7 @@
                "port. tries env PORT first. default 3001"
                :default "3001"]
               ["-r" "--root-path PATH/out. TODO: DOESNT WORK. always looks for out relative to binary"
-               "path to index.html, not-found.html, resources root"
+               "path to index.html, not-found.html, resources, extra/ root"
                :default @path-root]
               ["-v" "--version VERSION"
                "set code version inserted in DB"
