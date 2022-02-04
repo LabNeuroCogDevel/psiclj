@@ -32,6 +32,16 @@ create table worker (
 -- :doc Get all run info by run info (id,task,timepoint,run,version)
 select * from run where worker_id = :id and task_name like :task and timepoint = :timepoint and run_number = :run and version = :version
 
+-- :name most-recent :? :n
+-- :doc find the most recently finished row. :id can be '%'
+-- "with" doesn't play with hugsql? 
+select *
+ from run
+ join (select worker_id, max(finished_at) as finished_at from run where worker_id like :id group by worker_id) as mx
+ on
+  run.worker_id = mx.worker_id and
+  run.finished_at = mx.finished_at
+
 --  :n returns affected row count
 -- :name create-run-sqll :! :n
 -- :doc create or update response. TODO: add run

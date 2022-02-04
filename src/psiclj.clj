@@ -1,6 +1,6 @@
 ;; QUICKSTART
 ;;  open in emacs. M-x package-install cider; run cider-jack-in-clj (c-c M-j). run:
-;; (in-ns 'psiclj) (->"." io/file .getCanonicalPath) (DB)
+;; (in-ns psiclj) (->"." io/file .getCanonicalPath) (DB)
 ;; (run-server 4444) (print server-stop-fn)
 ;; NB. many changes wont be seen until (def app...) is re-sourced
 ;; elisp:
@@ -18,6 +18,7 @@
    ;;[ring.util.resposne :refer [resource-response]]
    [ring.middleware.json :as json]
    [ring.util.response :as resp]
+   [ring.middleware.basic-authentication :refer [wrap-basic-authentication]]
    ;; str split DATABASE_URL
    [clojure.string :as str]
    ;; command line args
@@ -189,6 +190,20 @@
   [& args]
   {:root @path-root :allow-symlinks? true})
 
+
+;; db access is behind basic auth
+(defn list-db [who]
+  (resp/response (most-recent (DB) {:id who})))
+
+(defn auth?
+  "authentiate for db access. Basic auth. password only"
+  [name pass]
+  (= pass (or (System/getenv "HTTPDBPASS") "drowssap")))
+(defroutes db-routes
+   (GET "/db" []  (list-db "%"))
+   (GET "/db/:who" [who]  (list-db who)))
+
+
 (defroutes pages
   (context "/:id/:task/:timepoint/:run" req
            (GET "/" []
@@ -219,6 +234,7 @@
    (route/files "/" {:root (str @path-root "/extra") :allow-symlinks? true})
    (GET "/ad" []  (send-built-in "ad.html"))
    (GET "/mturk.js" []  (send-built-in "mturk.js"))
+   (wrap-basic-authentication db-routes auth?)
    (route/not-found not-found-fn)))
 
 
