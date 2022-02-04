@@ -77,6 +77,29 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 ** Limitations
    * psiTurk has much better documentation and integration with amazon turk
 
+** Mechanical Turk
+
+*** Background
+    The pages hosted by ~psiclj~ can be run as an [[https://docs.aws.amazon.com/AWSMechTurk/latest/AWSMturkAPI/ApiReference_ExternalQuestionArticle.html][~ExternalQuestion~]] but there is [[https://blog.mturk.com/upcoming-changes-to-the-mturk-requester-website-and-questionform-data-format-f7c3238be58c][no longer]] a way to configure that on mturk's web interface. It must be created using the API. ~psiturk~ does this with the ~hit create~ command. more info in psiturk/amt_services.py
+    #+begin_src python
+         schema_url = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2006-07-14/ExternalQuestion.xsd"
+         template = '<ExternalQuestion xmlns="%(schema_url)s"><ExternalURL>%%(external_url)s</ExternalURL><FrameHeight>%%(frame_height)s</FrameHeight></ExternalQuestion>' % vars()
+         question = template % dict(
+             external_url=hit_config['ad_location'],
+             frame_height=600,
+         )
+    #+end_src
+
+ The provided ~external_url~ is embedded in a frame and appends  ~?assignmentId=...&hitId=...&turkSubmitTo=...&workerId=~
+ Initially, the preview will set ~assignmentId=ASSIGNMENT_ID_NOT_AVAILABLE~
+
+ After finishing, mturk expects a POST request that must include ~assignmentId~. post back URL depends on sandbox status (also in turkSubmitTo)
+
+ | real    | https://www.mturk.com/mturk/externalSubmit           |
+ | sandbox | https://workersandbox.mturk.com/mturk/externalSubmit |
+
+ A malicious assigned user could figure out the url scheme and skip the task if no server side logic is used to provide a check.
+
 ** Hacking
    
 *** Build

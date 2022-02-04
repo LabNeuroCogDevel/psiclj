@@ -1,3 +1,10 @@
+;; QUICKSTART
+;;  open in emacs. M-x package-install cider; run cider-jack-in-clj (c-c M-j). run:
+;; (in-ns 'psiclj) (->"." io/file .getCanonicalPath) (DB)
+;; (run-server 4444) (print server-stop-fn)
+;; NB. many changes wont be seen until (def app...) is re-sourced
+;; elisp:
+;;   (local-set-key (kbd "M-C-S-x")  (lambda () (interactive) (save-excursion (beginning-of-buffer) (re-search-forward "^(def app") (cider-eval-defun-at-point))))
 (ns psiclj
   (:require
    ;; DB
@@ -132,6 +139,7 @@
            req
            (task-run (assoc-in req [:params :version] @VERSION)))
 
+  ;; return json with all tasks (currently just one)
   ;; TODO: report more than one task. need major overhall
   (GET "/tasks" [] (resp/response {:tasks [@TASKNAME]})))
 
@@ -149,7 +157,11 @@
 ;; -- that is: does defroutes evaluated each request and update @VERSION?
 ;;             will see in the DB after setting -v
 ;; 20211029 add io/resource back if file doesn't exist. namely for built in not-found
-(defn slurp-root [fname]
+(defn slurp-root
+  "return file contents of either what's provided at run time via -r root
+  or what's stored in the resources of compiled applicaiton
+  used for not-found page and /ad"
+  [fname]
   (let [path (io/file @path-root fname)
         ;; if no file, use resource (for not-found.html)
         path (if (-> path .exists)
@@ -161,6 +173,14 @@
 (defn not-found-fn [req]
   {:status 404
    :body (slurp-root "not-found.html")})
+
+(defn send-built-in
+  "respond with built in file. optionally set status"
+  [file & {:keys [status] :or {status 200}}]
+  (fn [req]
+          {:status status
+           :body (slurp-root file)}))
+
 (defn find-root
   "root from global atom.
   prefix with extra / if we are an absolute path
@@ -197,6 +217,8 @@
    pages
    (wrap-routes #'task-run-context json/wrap-json-response)
    (route/files "/" {:root (str @path-root "/extra") :allow-symlinks? true})
+   (GET "/ad" []  (send-built-in "ad.html"))
+   (GET "/mturk.js" []  (send-built-in "mturk.js"))
    (route/not-found not-found-fn)))
 
 
@@ -212,11 +234,18 @@
 
 
 ;; Main
-(defonce server-stop-fn (atom nil))
 (defn check-file [fname]
     (when (-> @path-root (io/file fname) .exists not)
       (println (str "cannot find '" @path-root "/" fname "'. consier using -r"))
       (System/exit 1)))
+
+(defonce server-stop-fn (atom nil))
+(defn run-server
+  "run web service. restarts if running. state in @server-stop-fn"
+  [port]
+  (println (str "Running webserver on " port))
+  (when @server-stop-fn (@server-stop-fn))
+  (reset! server-stop-fn (srv/run-server #'app {:port port})))
 
 (defn -main [& args]
   (let [opts [["-p" "--port PORT"
@@ -263,6 +292,4 @@
 
     ;; serve it up
     ;; kill if already running (repl)
-    (println (str "Running webserver on " port))
-    (when @server-stop-fn (@server-stop-fn))
-    (reset! server-stop-fn (srv/run-server #'app {:port port}))))
+    (run-server)))
