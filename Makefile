@@ -6,6 +6,10 @@ psiclj: src/psiclj.clj
 	# export PATH="/usr/lib/jvm/java-16-graalvm/bin:$PATH"
 	clj -A:native-image
 
+psiclj.exe: src/psiclj.clj
+	# for windows
+	./compile.bat
+
 psiclj.jar: src/psiclj.clj
 	clj -A:uberjar
 
