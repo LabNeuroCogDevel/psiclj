@@ -24,6 +24,8 @@
    ;; command line args
    [clojure.tools.cli :refer [parse-opts]]
    [clojure.java.io :as io]
+   ;; saving to file
+   [clojure.data.json :as datajson]
    )
   (:gen-class))
 
@@ -81,6 +83,26 @@
 
 (defn DB [] (get-db-params))
 
+
+;; middleware. if we are on local host we dont need passwords and
+;; we can save json files per run when finished (safer than everything in one sqlite file?)
+(defn trusted-host? "trust localhost" [remote-addr]
+  (print (str "remote-addr:" remote-addr))
+  (= (str remote-addr) "127.0.0.1"))
+(defn auth?
+  "authentiate for db access. Basic auth. password only. must be in env HTTPDBPASS"
+  [name pass]
+  (if-let [want-pass (System/getenv "HTTPDBPASS")]
+    (= pass want-pass)
+    false))
+(defn localhost-bypass-auth
+  "wrap the wrapper. skip basic-authentication when host is good"
+  [app]
+  (fn [{:keys [remote-addr] :as req}]
+    (if (trusted-host? remote-addr)
+        (app req)
+        ((wrap-basic-authentication app auth?) req))))
+
 
 ;; 20211012 - not needed for working postgres, and doesn't help sqlite
 ;; need to tell native-image we use both postgres and sqlite so it's in the binary
@@ -101,6 +123,16 @@
   "did we already finish this run?"
   [run-data]
   (-> (DB) (run-by-id run-data) :finished_at nil? not))
+
+(defn write-run-json
+  "write out run info into a json file. TODO: save to results folder"
+  [{:keys [id task version run timepoint] :as run-info}]
+  (let [fname (apply str (interpose "_" (vals run-info)))
+        fname (.replaceAll (re-matcher #"[^A-Z0-9a-z:,._-]+" fname) "_")
+        fname (str fname ".json")
+        data (datajson/write-str (get-run-json (DB)  run-info))]
+    (with-open [out (io/writer fname )] (.write out data))
+    fname))
 
 
 ;; HTTP
@@ -130,10 +162,9 @@
 
    (POST "/finish" []
          (let [status (finish-run (DB) (:params req))]
-           (resp/response {:ok status})))
-
-   ;; TODO: add /csv that RA can used to save output (in addition to DB)
-   ))
+           ;; if we are running locally (trusted), then also save a json file
+           (if (trusted-host? (:remote-addr req)) (write-run-json (:params req)))
+           (resp/response {:ok status})))))
 
 (defroutes task-run-context
   (context "/:id/:task/:timepoint/:run"
@@ -192,16 +223,28 @@
 
 
 ;; db access is behind basic auth
-(defn list-db [who]
+(defn db-run-json [who]
   (resp/response (most-recent (DB) {:id who})))
 
-(defn auth?
-  "authentiate for db access. Basic auth. password only"
-  [name pass]
-  (= pass (or (System/getenv "HTTPDBPASS") "drowssap")))
+(defn tag "html tag" [t v] (str "<" t ">" v "</" t ">"))
+(defn str-map [f col] (apply str (map f col)))
+(defn tag-list [t l] (str-map (fn[i] (tag t i)) l))
+(defn db-runs-html
+  "quick html table of recent complete runs"
+  [req]
+  (resp/response
+   (str "<html><body><table>"
+        ;; hard coded headers from recent-runs. todo: use let above and keys here
+        (tag  "tr" (tag-list "th"
+                             '(worker_id, task_name , version , timepoint , run_number , started_at , finished_at)))
+        ;; tr with nested td
+        (str-map (fn [row] (tag "tr" (tag-list "td" (vals row))))
+                 (recent-runs (DB)))
+       "</table></body></html>" )))
 (defroutes db-routes
-   (GET "/db" []  (list-db "%"))
-   (GET "/db/:who" [who]  (list-db who)))
+  (context "/" req
+           (GET "/db" {:keys [headers params body server-port] :as req}  (db-runs-html req))
+           (GET "/db/:who" [who]  (db-run-json who))))
 
 
 (defroutes pages
@@ -234,7 +277,7 @@
    (route/files "/" {:root (str @path-root "/extra") :allow-symlinks? true})
    (GET "/ad" []  (send-built-in "ad.html"))
    (GET "/mturk.js" []  (send-built-in "mturk.js"))
-   (wrap-basic-authentication db-routes auth?)
+   (localhost-bypass-auth db-routes)
    (route/not-found not-found-fn)))
 
 
@@ -308,4 +351,4 @@
 
     ;; serve it up
     ;; kill if already running (repl)
-    (run-server)))
+    (run-server port)))
