@@ -27,10 +27,36 @@ create table worker (
 )
 
 
+-- :name recent-runs :n
+-- :doc summary info for each run. everytyhing but info and json
+select worker_id, task_name, version, timepoint, run_number, created_at, finished_at
+from run
+order by created_at desc limit 10
+
 --  ":1" result = a single record (hashmap)
 -- :name run-by-id :? :1
 -- :doc Get all run info by run info (id,task,timepoint,run,version)
 select * from run where worker_id = :id and task_name like :task and timepoint = :timepoint and run_number = :run and version = :version
+
+-- :name get-run-json :? :1
+-- :doc get task data for a single run
+select json from run
+  where worker_id = :id and
+        task_name = :task and
+	version = :version and
+        run_number = :run and
+        timepoint = :timepoint
+
+
+-- :name most-recent :? :n
+-- :doc find the most recently finished row. :id can be '%'
+-- "with" doesn't play with hugsql?
+select *
+ from run
+ join (select worker_id, max(finished_at) as finished_at from run where worker_id like :id group by worker_id) as mx
+ on
+  run.worker_id = mx.worker_id and
+  run.finished_at = mx.finished_at
 
 --  :n returns affected row count
 -- :name create-run-sqll :! :n

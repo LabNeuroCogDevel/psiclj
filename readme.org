@@ -1,6 +1,6 @@
 #+OPTIONS: toc:nil
 * PsiClj
-A http server with a simple API designed for experiment presentation. Bring your own javascript.
+A portable http server with a simple API designed for experiment presentation. Bring your own javascript.
 
 
 
@@ -10,12 +10,12 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
    * Present an existing javascript/browser based experiment and record responses to a database. 
    * Run on cheap/free web hosting (heroku, openshift, self-host) with an eye toward integrating with Amazon Turk
    * Easily install and run within software-restricted hospital environments (MS Windows, user level permissions only)
-   * Easy development on linux (cf. EPrime)
+   * Easy development on linux (unlike, say EPrime)
 
 ** Usage
 *** Server
 
-    - should already have javascript task in ~out/~ with at least an ~index.html~. built in ~not-found.html~ will be used when not within ~out/~
+    - you should already have a javascript task in ~out/~ with at least an ~index.html~. The built-in ~not-found.html~ when there is no ~out/not-found.html~
     - start server (see `psiclj -h` for changing port and root path)
     - open in browser
 
@@ -28,12 +28,12 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
     
      then browse to http://localhost:3001/
 **** Run locally without command line fiddling
-***** Windows Icon
-      * copy with html/media in ~out/~ in same directory
+***** Clickable Windows Icon to run
+      * copy with html/media in ~out/~ in same directory as psiclj.jar (or psiclj.exe w/native image)
       * create shortcut
       * edit shortcut to launch in exe/jar's directory
 ***** ~.bat~ script
-      specify all the command options in mytask.bat on the desktop
+      specify all the command options in e.g. ~mytask.bat~ and place on the desktop
 ***** TODO use file picker/gui from java
       * consider reading from ini/settings for many tasks? (present on index page)
       * might be good to have a gui where a close button exists
@@ -49,13 +49,16 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
       #+end_src
 
       * must setup postgresql (sqlite file will not be on a persistent file system)
-      * default setup looks to environment for ~PORT~ and ~DATABASE_URL~
+      * default setup looks to environment for ~PORT~ and ~DATABASE_URL~. 
+      * if ~HTTPDBPASS~ is set, the ~/db~ will also be accessible. username is ignored
         
 ***** self host
       run right from clojure as startup time is unlikely to be the issue it is with free dynamo's from heroku. set ~PORT=80~ and use the default sqlite3 backend, no postgresql needed.
 
-**** Setup
+**** Configure
      * the ~out/extra~ directory is used for additional root-level routes (e.g http://task.herokuapp.com/testing.html from ~out/extra/testing.html~)
+     * from mturk: an example/minimal ~/ad.html~ and ~mturk.js~. as for not-found.html, place a replacement file of the same name in ~out/~
+     * ad.html and not-found.html use minimal javascript to redirect to the expected ~/id/task/timepoint/run/~ route.
 
 *** Javascript setup
     Running ~psiclj~ alone doesn't do much. You'll likely want a javascript task to make use of the very simple API.
@@ -77,13 +80,56 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 ** Limitations
    * psiTurk has much better documentation and integration with amazon turk
 
+** Mechanical Turk
+
+*** Background
+    The pages hosted by ~psiclj~ can be run as an [[https://docs.aws.amazon.com/AWSMechTurk/latest/AWSMturkAPI/ApiReference_ExternalQuestionArticle.html][~ExternalQuestion~]] but there is [[https://blog.mturk.com/upcoming-changes-to-the-mturk-requester-website-and-questionform-data-format-f7c3238be58c][no longer]] a way to configure that on mturk's web interface. It must be created using the API. ~psiturk~ does this with the ~hit create~ command. more info in psiturk/amt_services.py
+    #+begin_src python
+         schema_url = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2006-07-14/ExternalQuestion.xsd"
+         template = '<ExternalQuestion xmlns="%(schema_url)s"><ExternalURL>%%(external_url)s</ExternalURL><FrameHeight>%%(frame_height)s</FrameHeight></ExternalQuestion>' % vars()
+         question = template % dict(
+             external_url=hit_config['ad_location'],
+             frame_height=600,
+         )
+    #+end_src
+
+ The provided ~external_url~ is embedded in a frame and appends  ~?assignmentId=...&hitId=...&turkSubmitTo=...&workerId=~
+ Initially, the preview will set ~assignmentId=ASSIGNMENT_ID_NOT_AVAILABLE~
+
+ After finishing, mturk expects a POST request that must include ~assignmentId~. post back URL depends on sandbox status (also in turkSubmitTo)
+
+ | real    | https://www.mturk.com/mturk/externalSubmit           |
+ | sandbox | https://workersandbox.mturk.com/mturk/externalSubmit |
+
+ A malicious assigned user could figure out the url scheme and skip the task if no server side logic is used to provide a check.
+ 
+ 
+*** TODO store assignmentId in the timepoint column of run
+    need to adjust schema so timepoint is varchar?
+    | workerId     | worker_id |
+    | hitID        | task      |
+    | assignmentId | timepoint |
+ 
+** Data interface
+  Task metrics and performance values must be calculated elsewhere. psiclj doesn't know anything about the structure of any task. 
+  Responses are expected to be uploaded to ~/response~ and will be in the ~json~ column of the ~run~ table.
+
+*** ~/db~ shows most recent runs
+    This is password protected by ~HTTPDBPASS~ environment variable (allows any username). If not set, the page will be inaccessible from the web.
+    But, it is always accessible without a password from localhost (~remote-addr~ == ~127.0.0.1~)
+*** .json files
+    When run from localhost, ~/finish~ populates ~finished_at~ as normal and also saves out a .json file in the server executable directory.
+    Presumably, when running on localhost, there is not internet access. Collecting run-info named json files might be easier than merging sqlite databases.
+
 ** Hacking
    
 *** Build
     see ~Makefile~. depends on clojure. building an executable requires native image from graalvm. Setup for heroku in ~Dockerfile.heroku~
     
 **** windows
-     might need native-image.cmd ? https://github.com/babashka/babashka-sql-pods/blob/master/bb.edn
+     ~compile.bat~ outlines a nearly (20220205WF) working windows build pipeline using the free 4Gb IEUser virtualbox image.
+
+     also see https://github.com/babashka/babashka-sql-pods/blob/master/bb.edn
      
 *** Databases
    ~postgresql~ and ~sqlite~ (default) are available as of 20211009. Where the DBs differ (upsert), there is specific code for each. see ~src/all.sql~. sql file is parsed by hugsql (yesql derivative). ~DATABASE_URL~ environment variable is supported for heroku. When it exists, the server use postgresql. DB libaries complicate generating the graalvm native image (static binary).
