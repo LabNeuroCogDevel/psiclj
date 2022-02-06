@@ -67,9 +67,10 @@
     (if db
         {:subprotocol "postgresql"
          :subname (db-to-jdbc db)}
+        (do (Class/forName "org.sqlite.JDBC");here for native-image sql build
         {:subprotocol "sqlite"
          :classname "org.sqlite.JDBC"
-         :subname "psiclj.sqlite3"})))
+         :subname "psiclj.sqlite3"}))))
 
 (defn DB [] (get-db-params))
 
