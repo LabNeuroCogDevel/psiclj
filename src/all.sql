@@ -6,7 +6,9 @@ create table if not exists run (
   worker_id  text not null,
   task_name  text not null default 'card',
   run_number varchar(2) not null default '1',
-  timepoint  varchar(2) not null default '1',
+  -- tp prev varchar(2). now text to use as mturk's "assignmentId"
+  -- ALTER TABLE run ALTER COLUMN timepoint TYPE text;
+  timepoint  text not null default '1',
   version    text not null,
   json       text,
   system_info text,

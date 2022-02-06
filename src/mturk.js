@@ -3,7 +3,8 @@ function url_params(){
 
     // id and task from mturk. 
     // TODO: should hitId have a lookup in psiclj?
-    params = {"id": url.searchParams.get("assignmentId"),
+    params = {"id": url.searchParams.get("workerId"),
+              "timepoint": url.searchParams.get("assignmentId"),
               "task": url.searchParams.get("hitId"),
               "hash": url.hash};
     
@@ -14,12 +15,14 @@ function url_params(){
     }
 
     //maybe something went wrong
+    //should we bail instead of displaying the "PLAY" link?
     if(!params["task"]){params["task"] = "no_task";}
+    if(!params["timepoint"]){params["timepoint"] = 1;}
     return(params)
 }
 
 function params_to_taskurl(params){
-    return("/" + params.id + "/" + params.task + "/" + 1 + "/" + 1 + "/");
+    return("/" + params.id + "/" + params.task + "/" + params.timepoint + "/" + 1 + "/");
 }
 
 function popup(url) {

@@ -104,11 +104,13 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
  A malicious assigned user could figure out the url scheme and skip the task if no server side logic is used to provide a check.
  
  
-*** TODO store assignmentId in the timepoint column of run
-    need to adjust schema so timepoint is varchar?
+*** mTurk vs local data schema
+    |turk          | local     |
     | workerId     | worker_id |
     | hitID        | task      |
     | assignmentId | timepoint |
+
+    initially coded timpoint as varchar(2). is now "text" in DB. have not check for problems yet (20220205WF)
  
 ** Data interface
   Task metrics and performance values must be calculated elsewhere. psiclj doesn't know anything about the structure of any task. 
