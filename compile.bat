@@ -35,7 +35,6 @@ Rem .NativeImage$NativeImageError: No main manifest attribute, in psiclj.jar
 Rem is lein aviable? needed b/c haven't figured out how to configure deps.edn abov
 
 WHERE lein.bat 
-
 IF %ERRORLEVEL% NEQ 0 (
 Rem INSTALL LEININGEN
 Rem https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein.bat
@@ -43,9 +42,9 @@ Rem lein.bat self-install
 exit /b 1
 )
 
-Rem lein uberjar
-Rem e.g makes target/psiclj-0.1.0-standalone.jar
+Rem Make eg target/psiclj-0.1.0-standalone.jar
 Rem this standalone works with native-image (or at least did once)
+lein uberjar
 
 Rem deps.exe -A:native-image
 Rem "The command line is too long"

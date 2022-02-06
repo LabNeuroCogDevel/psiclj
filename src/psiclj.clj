@@ -60,6 +60,11 @@
   <- //host:port/db?user=X&password=Y  ; NB no jdbc:postgresql:
   "
   [dburl] (-> dburl dburl-map jdbc-url))
+
+; here for native-image build
+; otherwise: Exception in thread "main" java.sql.SQLException: No suitable driver found for jdbc:sqlite:psiclj.sqlite3
+(Class/forName "org.sqlite.JDBC") 
+
 (defn get-db-params
   "setup database default to hardcoded psiclj.sqlite3. otherwise use postgres"
   []
@@ -67,10 +72,9 @@
     (if db
         {:subprotocol "postgresql"
          :subname (db-to-jdbc db)}
-        (do (Class/forName "org.sqlite.JDBC");here for native-image sql build
         {:subprotocol "sqlite"
          :classname "org.sqlite.JDBC"
-         :subname "psiclj.sqlite3"}))))
+         :subname "psiclj.sqlite3"})))
 
 (defn DB [] (get-db-params))
 
