@@ -1,4 +1,4 @@
-.PHONY: all run-clj run-bin run-jar debug-figwheel
+.PHONY: all run-clj run-bin run-jar test
 all: psiclj
 
 psiclj: src/psiclj.clj
@@ -27,3 +27,5 @@ psiclj-heroku: Dockerfile.heroku src/*
 	docker build -t psiclj-build . -f Dockerfile.heroku
 	docker cp `docker create --rm psiclj-build`:/psiclj/psiclj $@
 
+test: psiclj
+	bats test/system_tests.bats
