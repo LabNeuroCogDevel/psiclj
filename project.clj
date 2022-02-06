@@ -9,6 +9,8 @@
         [ring/ring-core         "1.9.4"]
         [ring/ring-json         "0.5.1"]
         [org.clojure/tools.cli "0.3.5"]  ; lein complains but not actually used by project?
+        [ring-basic-authentication/ring-basic-authentication "1.1.1"]
+        [org.clojure/data.json "2.4.0"]
         ]
   :main psiclj
   :plugins [[io.taylorwood/lein-native-image "0.3.0"]]
