@@ -16,6 +16,8 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 *** Server
 
     - you should already have a javascript task in ~out/~ with at least an ~index.html~. The built-in ~not-found.html~ when there is no ~out/not-found.html~
+       * besides index and not-found, all files in ~out/~ will be rendered at the ~/id/task/timepoint/run/~ endpoint
+       * put other root level media/pages (e.g. global css and js) in ~out/extra/~ . ~out/extra/mystyle.css~ will be resolve from ~/mystyle.css~
     - start server (see `psiclj -h` for changing port and root path)
     - open in browser
 
@@ -36,7 +38,7 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
       specify all the command options in e.g. ~mytask.bat~ and place on the desktop
 ***** TODO use file picker/gui from java
       * consider reading from ini/settings for many tasks? (present on index page)
-      * might be good to have a gui where a close button exists
+      * might be good to have a gui with a close button to stop instead of an open cmd.exe/bat window
 
 **** Run Hosted
 ***** heroku buildpack
