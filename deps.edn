@@ -14,6 +14,8 @@
 
         ; saving json
         org.clojure/data.json {:mvn/version "2.4.0"}
+        ; hash for completion code
+        org.clj-commons/digest {:mvn/version "1.4.100"}
         }
  :paths ["src" "classes"]
  :aliases {:native-image {:main-opts ["-m" "clj.native-image" "psiclj"

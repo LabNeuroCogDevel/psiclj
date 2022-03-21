@@ -100,3 +100,24 @@ update run set finished_at = current_timestamp
 	version = :version and
         run_number = :run and
         timepoint = :timepoint
+
+
+-- :name md5-finish :? :1
+-- :doc get 5 digit code from md5sum of fininsh
+select left(md5(finished_at||json),5)
+from run
+where worker_id = :id and
+        task_name = :task and
+	version = :version and
+        run_number = :run and
+        timepoint = :timepoint
+
+-- :name string-for-md5-finish :? :1
+-- :doc get 5 digit code from md5sum of fininsh
+select finished_at||json as runinfostr
+from run
+where worker_id = :id and
+        task_name = :task and
+	version = :version and
+        run_number = :run and
+        timepoint = :timepoint

@@ -26,6 +26,8 @@
    [clojure.java.io :as io]
    ;; saving to file
    [clojure.data.json :as datajson]
+   ;; completion code
+   [clj-commons.digest :refer [md5]]
    )
   (:gen-class))
 
@@ -139,6 +141,11 @@
     (with-open [out (io/writer fname )] (.write out data))
     fname))
 
+(defn md5-data
+  "generate code for compeltion. also see psql specific md5-finish"
+  [run-info]
+  (let [finished_at_str (string-for-md5-finish (DB) run-info)]
+    (md5 (:runinfostr finished_at_str))))
 
 ;; HTTP
 ;; https://github.com/taylorwood/lein-native-image/tree/master/examples/http-api
@@ -169,7 +176,7 @@
          (let [status (finish-run (DB) (:params req))]
            ;; if we are running locally (trusted), then also save a json file
            (if (trusted-host? (:remote-addr req)) (write-run-json (:params req)))
-           (resp/response {:ok status})))))
+           (resp/response {:ok status :code (subs ( md5-data (:params req)) 0 5)})))))
 
 (defroutes task-run-context
   (context "/:id/:task/:timepoint/:run"
