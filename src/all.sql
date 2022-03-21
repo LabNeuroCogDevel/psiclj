@@ -19,6 +19,16 @@ create table if not exists run (
   PRIMARY KEY (worker_id, task_name, version, run_number, timepoint)
 )
 
+-- :name create-permutation-lookup-table
+-- :command :execute
+-- :result :raw
+-- :doc Create permutations table for taskname (HITId) to counterbalance hash/anchor
+create table if not exists permutations (
+  task_name  text not null,
+  anchor text not null default "",
+  FOREIGN KEY(task_name) REFERENCES run(task_name)
+)
+
 -- :name create-worker-table
 -- :command :execute
 -- :result :raw
@@ -121,3 +131,9 @@ where worker_id = :id and
 	version = :version and
         run_number = :run and
         timepoint = :timepoint
+
+
+-- :name get-anchor :? :1
+-- :doc anchors to use with this task_name (likey mturk HITId)
+select anchor from permutations
+where task_name like :task

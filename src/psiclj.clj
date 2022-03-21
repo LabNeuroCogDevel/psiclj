@@ -185,7 +185,8 @@
 
   ;; return json with all tasks (currently just one)
   ;; TODO: report more than one task. need major overhall
-  (GET "/tasks" [] (resp/response {:tasks [@TASKNAME]})))
+  (GET "/tasks" [] (resp/response {:tasks [@TASKNAME]}))
+  (GET "/anchor/:task" [task] (resp/response {:anchors (get-anchor (DB) {:task task})})))
 
 (defn quick-info "where are we. used to debug"
   [req]
@@ -298,10 +299,12 @@
   (def run-data {:id "will" :task "test" :version "x" :run 1 :timepoint 1 :json "[]" :info "[]"})
   (let [DB (DB)]
   (create-run-table DB)
+  (create-permutation-lookup-table DB)
   (already-done? run-data)
   (create-run DB (assoc run-data :info "[{system: \"none\"}]"))
   (upload-json DB (assoc run-data :json "[{data: [1,3]}]"))
-  (finish-run DB run-data)))
+  (finish-run DB run-data)
+  (md5-data run-data)))
 
 
 ;; Main
@@ -359,7 +362,8 @@
     ;; test out the DB (or die w/error)
     (let [DB (DB)]
       (println (str "creating run table on " DB))
-      (create-run-table DB))
+      (create-run-table DB)
+      (create-permutation-lookup-table DB))
 
     ;; serve it up
     ;; kill if already running (repl)
