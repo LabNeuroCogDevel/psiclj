@@ -21,7 +21,15 @@
                             "--verbose"
                             "-H:+ReportExceptionStackTraces"
                             "-H:IncludeResources=.*html$"
+                            "-H:IncludeResources=.*js$"
+                            "-H:IncludeResources=.*css$"
                             "-J-Xmx3g"
                             "--allow-incomplete-classpath"
                             ;;avoid spawning build server
                             "--no-server"]})
+; after thml
+; '-H:ResourceConfigurationResources@jar:file:///home/foranw/.m2/repository/org/xerial/sqlite-jdbc/3.36.0.3/sqlite-jdbc-3.36.0.3.jar!/META-INF/native-image/org.xerial/sqlite-jdbc/native-image.properties=META-INF/native-image/org.xerial/sqlite-jdbc/resource-config.json' \
+;'-H:JNIConfigurationResources@jar:file:///home/foranw/.m2/repository/org/xerial/sqlite-jdbc/3.36.0.3/sqlite-jdbc-3.36.0.3.jar!/META-INF/native-image/org.xerial/sqlite-jdbc/jni-config.json=META-INF/native-image/org.xerial/sqlite-jdbc/jni-config.json' \
+;'-H:ReflectionConfigurationResources@jar:file:///home/foranw/.m2/repository/org/xerial/sqlite-jdbc/3.36.0.3/sqlite-jdbc-3.36.0.3.jar!/META-INF/native-image/org.xerial/sqlite-jdbc/reflect-config.json=META-INF/native-image/org.xerial/sqlite-jdbc/reflect-config.json' \
+;'-H:ResourceConfigurationResources@jar:file:///home/foranw/.m2/repository/org/xerial/sqlite-jdbc/3.36.0.3/sqlite-jdbc-3.36.0.3.jar!/META-INF/native-image/org.xerial/sqlite-jdbc/resource-config.json=META-INF/native-image/org.xerial/sqlite-jdbc/resource-config.json' \
+;

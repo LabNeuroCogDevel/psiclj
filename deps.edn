@@ -23,6 +23,8 @@
                                       "--no-fallback"
                                       "--allow-incomplete-classpath"
                                       "-H:IncludeResources=.*html$"
+                                      "-H:IncludeResources=.*js$"
+                                      "-H:IncludeResources=.*css$"
                                       "--verbose"
                                       ; windows build issues?
                                       ;"-J-Xms3g" 

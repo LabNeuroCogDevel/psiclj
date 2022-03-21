@@ -1,16 +1,16 @@
 .PHONY: all run-clj run-bin run-jar test
 all: psiclj
 
-psiclj: src/psiclj.clj
+psiclj: src/psiclj.clj src/*html src/*js
 	# sudo archlinux-java set java-16-graalvm
 	# export PATH="/usr/lib/jvm/java-16-graalvm/bin:$PATH"
 	clj -A:native-image
 
-psiclj.exe: src/psiclj.clj
+psiclj.exe: src/psiclj.clj src/*html src/*js
 	# for windows
 	./compile.bat
 
-psiclj.jar: src/psiclj.clj
+psiclj.jar: src/psiclj.clj src/*html src/*js
 	clj -A:uberjar
 
 .loaddburl:
