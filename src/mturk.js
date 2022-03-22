@@ -61,7 +61,7 @@ async function append_play_link(){
    document.body.innerHTML +=
         "<br> <a class='clickme' href='#' onClick=\""+cmd+"\">PLAY!</a>"+
         "<br><br><form method=post action='"+ params.external +"'>"+
-        "Completion code: <input size=5 id=completecode value='' name='check'><br>"+
+        "Completion code: <input size=5 id=completecode value='' name='completecode'><br>"+
         "<input type=hidden name=assignmentId value='"+params.assignmentId+"'>" +
         "<input id=mtruksubmit type='submit' value='COMPLETE'></form>";
 }
@@ -76,6 +76,6 @@ function taskCompleteCode(code){
      return(false);
  }
  codebox.value=code;
- codebox.parent.submit();
+ codebox.parentElement.submit();
  return(true);
 }
