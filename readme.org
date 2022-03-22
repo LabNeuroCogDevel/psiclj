@@ -21,6 +21,13 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
     - start server (see `psiclj -h` for changing port and root path)
     - open in browser
 
+**** Environment variables 
+     These variables can be exported. PORT and DATABASE_URL implemented for heroku. 
+ | PORT=3002                                          | http server port                     |
+ | DATABASE_URL=postgres://user:x@localhost:5432/mydb | how to connect to db                 |
+ | HTTPDBPASS=mylocalpass                             | access index, not-found.html and /db |
+ | PSQLSSLQUERY=sslmode=disable                       | useful for devel db                  |
+
 **** Development version
      Minimally, you need a ~out/index.html~ file before running:
 
