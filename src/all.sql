@@ -25,8 +25,9 @@ create table if not exists run (
 -- :doc Create permutations table for taskname (HITId) to counterbalance hash/anchor
 create table if not exists permutations (
   task_name  text not null,
-  anchor text not null default "",
-  FOREIGN KEY(task_name) REFERENCES run(task_name)
+  anchor text not null default ''
+  -- psql requires task_name to be unique
+  -- FOREIGN KEY(task_name) REFERENCES run(task_name)
 )
 
 -- :name create-worker-table

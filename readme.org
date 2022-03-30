@@ -22,7 +22,8 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
     - open in browser
 
 **** Environment variables 
-     These variables can be exported. PORT and DATABASE_URL implemented for heroku. 
+     These variables will be used if exported. PORT and DATABASE_URL implemented for heroku. 
+     HTTPDBPASS used to protect /db and / route. if unset, they will be inaccessible.
  | PORT=3002                                          | http server port                     |
  | DATABASE_URL=postgres://user:x@localhost:5432/mydb | how to connect to db                 |
  | HTTPDBPASS=mylocalpass                             | access index, not-found.html and /db |
@@ -52,9 +53,10 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
       see https://github.com/LabNeuroCogDevel/choice-landscape (esp `Procfile`)
 
       #+begin_src bash
-	heroku buildpacks:add https://github.com/LabNeuroCogDevel/psiclj.git
+        heroku buildpacks:add https://github.com/LabNeuroCogDevel/psiclj.git
         heroku addons:create  heroku-postgresql
-	echo "web: psiclj-heroku -r out/ -v myversionid -t mytaskname" > Procfile
+        echo "web: psiclj-heroku -r out/ -v myversionid -t mytaskname" > Procfile
+        heroku config:set HTTPDBPASS='p@sw0'
       #+end_src
 
       * must setup postgresql (sqlite file will not be on a persistent file system)
