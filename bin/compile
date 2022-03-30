@@ -1,5 +1,5 @@
 #!/bin/sh
-release="https://github.com/LabNeuroCogDevel/psiclj/releases/download/v0.1.0/psiclj-heroku"
+release="https://github.com/LabNeuroCogDevel/psiclj/releases/download/v0.2.0/psiclj-heroku"
 
 # script gets build directory as input. what is there eventually goes into home
 # which is probbly /app
