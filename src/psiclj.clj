@@ -289,6 +289,7 @@
    (wrap-routes #'task-run-context json/wrap-json-response)
    (route/files "/" {:root (str @path-root "/extra") :allow-symlinks? true})
    (GET "/ad" []  (send-built-in "ad.html"))
+   (GET "/consent.html" []  (send-built-in "consent.html"))
    (GET "/mturk.js" []  (send-built-in "mturk.js"))
    (localhost-bypass-auth db-routes)
    (route/not-found not-found-fn)))

@@ -102,10 +102,11 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
    * psiTurk has much better documentation and integration with amazon turk
 
 ** Mechanical Turk
-   ExternalQuestion provides an https "ad" url to be loaded within an iframe on the mturk site. The provide url/frame serves 3 separate goals depending on how it is accessed:
+   ExternalQuestion provides an https "ad" url to be loaded *within an iframe on the mturk site*.
+   The provide url/frame serves 3 separate goals depending on how it is accessed:
    1. advertise the Human Intelligence Task (assignmentId=ASSIGNMENT_ID_NOT_AVAILABLE)
    2. launch the HIT (assignmentId=abc123......)
-   3. submit completed work (form POST to externalSubmit)
+   3. submit completed work (form POST to externalSubmit, submit page excutes javascript referencing ~parent~ to escape the iframe)
 
 *** ExternalQuestion Setup
     The pages hosted by ~psiclj~ can be run as an [[https://docs.aws.amazon.com/AWSMechTurk/latest/AWSMturkAPI/ApiReference_ExternalQuestionArticle.html][~ExternalQuestion~]] but there is [[https://blog.mturk.com/upcoming-changes-to-the-mturk-requester-website-and-questionform-data-format-f7c3238be58c][no longer]] a way to configure that on mturk's web interface. It must be created using the API. ~psiturk~ does this with the ~hit create~ command. See the mturk docs and psiturk/amt_services.py
@@ -128,6 +129,26 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 
 
  The POST must include at least two fields (e.g. [[https://stackoverflow.com/questions/29969245/amazon-mechanical-turk-externalsubmit-error]["foo=1"]] in addition to assignmentId) and be **from within the iframe** -- not from e.g. a popup window. mturk's externalSubmit page runs ~parent.postMessage~ to break out of the iframe.
+
+**** Provided routes
+     This pages are provided but will use files of the same name in ~extra/~ if they exist.
+     | ad.html      | preview, consent, launch task popup|
+     | consent.html | data use and risk information |
+     | mturk.js     | provides ~taskCompleteCode~ and functions for getting anchor permutations for a given HIT|
+
+***** Consent
+      You almost certainly will want to use your own consent language.
+      Save your own html to ~out/extra/consent.html~
+
+      alternatively, you can copy ~cp ad.html out/extra/~ and skip the consent all together with the change
+      #+BEGIN_SRC diff
+ -<body onload="add_consent()">
+ +<body onload="append_play_link()">
+      #+END_SRC
+
+You'll likely want to change the text there or in ~mturk.js~ too
+
+
 
 **** Popup/popout window
      Running a task from within the iframe might be too constrained. It's easy to launch a popup window but amazon wants all the interactions to happen within the iframe.
@@ -200,6 +221,7 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
 
 * TODO
   * add Procfile and heroku documentation
+  * non-defined root level files not seen? would be nice to use figwheel development version
   * and /quit route to shutdown server
   * pull task names from permutation table
   * host multiple tasks? would require rework of @TASKNAME @root-path and routing functions

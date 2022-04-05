@@ -7,17 +7,19 @@
      body {max-width: 600px; margin:auto; }
      li { padding-bottom: .5em}
      .clickme {size: larger;
-               background: lightblue;
+               background: #fe4e4e;
                font-weight: bolder;
                padding:20px;
-               display: block;
+               display: inline-block;
                text-align: center;
-               margin: auto;
+               margin: 0 20px 0 20px;
                width: 20%;}
+     .clickme:visited { background: lightgreen;}
    </style>
    <script type="text/javascript" src="mturk.js"> </script>
  </head> 
- <body onload="append_play_link()">
+ <!-- consent only added when not preview (have assignmentId in url). clicking replaces html with instructions and "PLAY!" link -->
+ <body onload="add_consent()">
   <h1>Play a game for science!</h1>
   <ul>
 <li>The game will open in it's own browser window with further instructions.</li>
