@@ -29,3 +29,9 @@ psiclj-heroku: Dockerfile.heroku src/*
 
 test: psiclj
 	bats test/system_tests.bats
+
+node_modules/@testing-library/:
+	npm install --save-dev @testing-library/dom
+test-js: node_modules/@testing-library/
+	# npm install -g jest
+	jest test/index.test.ts

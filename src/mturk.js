@@ -13,13 +13,21 @@
     6. MANUAL confirm or reject worker. autoaccepted after 30 days
 
 */
+
+// ugly hack to store popup window for testing
+function task_popup_window(win){
+   if(win!==undefined) { task_popup_window.win = win; console.log(win)}
+   return(task_popup_window.win || null);
+}
+
 async function get_anchor(task) {
   const resp = await fetch("/anchor/"+task);
+  if(!resp.ok){return "";} // when no server or server error
   const ret = await resp.json()
   return ret.anchor;
 }
 function url_params(){
-    var url = new URL(document.URL);
+    const url = new URL(document.URL);
 
     // id and task from mturk.
     // TODO: should hitId have a lookup in psiclj?
@@ -29,7 +37,6 @@ function url_params(){
               "hash": url.hash,
               "anchor": "vanilla", //populate from /anchor/$hitId
               "external": "https://www.mturk.com/mturk/externalSubmit" };
-
 
     //if preview. dont show the "PLAY" link
     if(!params["id"] ||
@@ -48,6 +55,7 @@ function url_params(){
     //should we bail instead of displaying the "PLAY" link?
     if(!params["task"]){params["task"] = "no_task";}
     if(!params["timepoint"]){params["timepoint"] = 1;}
+
     return(params)
 }
 
@@ -55,12 +63,24 @@ function params_to_taskurl(params){
     return("/" + params.id + "/" + params.task + "/" + params.timepoint + "/" + 1 + "/");
 }
 
-function popup(url, w, h) {
-    //window.alert("popup for "+url)
-    popup = window.open(url,"Popup",
-                        "toolbar=no,location=no,status=no,menubar=no,"+
-                        "scrollbars=no,width="+w+",height="+h);//,resizable=no
-    return(false);
+function popup_nofrills(url, w, h) {
+   //window.alert("popup for "+url)
+   const win = window.open(url,"Popup",
+                "toolbar=no,location=no,status=no,menubar=no,"+
+                "scrollbars=no,width="+w+",height="+h);//,resizable=no
+   return(win);
+}
+function change_to_play_button(popup_cmd, action, id){
+   //NB. <div#buttons> created by add_consent
+   obj = document.querySelector("#buttons")
+   if(obj == null){ obj = document.body; }
+   obj.innerHTML =
+        "<a class='clickme' href='#' onClick=\""+popup_cmd+"\">PLAY!</a>"+
+        "<br><br><form method=post action='"+ action +"'>"+
+        "Completion code: <input size=5 id=completecode value='' name='completecode'><br>"+
+        "<input type=hidden name=assignmentId value='"+id+"'>" +
+        "<input id=mtruksubmit type='submit' value='COMPLETE'></form>";
+
 }
 
 // adds a link to the task if assignmentId is reasonable
@@ -72,17 +92,8 @@ async function append_play_link(){
    url = params_to_taskurl(params)
    console.log(params)
    anchors = params.anchor  + "&noinstruction&fewtrials"
-   cmd = "popup('" + url +"#"+ anchors +"', 1024, 768)"
-
-   //NB. <div#buttons> created by add_consent
-   obj = document.querySelector("#buttons")
-   if(obj == null){ obj = document.body; }
-   obj.innerHTML =
-        "<a class='clickme' href='#' onClick=\""+cmd+"\">PLAY!</a>"+
-        "<br><br><form method=post action='"+ params.external +"'>"+
-        "Completion code: <input size=5 id=completecode value='' name='completecode'><br>"+
-        "<input type=hidden name=assignmentId value='"+params.assignmentId+"'>" +
-        "<input id=mtruksubmit type='submit' value='COMPLETE'></form>";
+   cmd = "popup_nofrills('" + url +"#"+ anchors +"', 1024, 768)"
+   change_to_play_button(cmd, params.external, params.assignmentId)
 }
 
 
@@ -101,7 +112,7 @@ function add_consent(){
 }
 
 async function consent_form_clicked(){
-    popup('/consent.html', 800, 600);
+    popup_nofrills('consent.html', 800, 600);
     append_play_link();
 }
 
@@ -109,7 +120,7 @@ async function consent_form_clicked(){
 // set completion code and try to submit form
 // hopefully triggered by the popup this page opens
 function taskCompleteCode(code){
- let codebox =  document.querySelector("input[name='completecode']");
+ const codebox =  document.querySelector("input[name='completecode']");
  if(codebox === null){
      console.log("error: cannot find complete code input");
      return(false);
@@ -118,3 +129,7 @@ function taskCompleteCode(code){
  codebox.parentElement.submit();
  return(true);
 }
+
+// for testing with jest
+if (typeof module == 'undefined') { var module = {}; }
+module.exports = [add_consent, taskCompleteCode, append_play_link, change_to_play_button, get_anchor, url_params,consent_form_clicked, task_popup_window];
