@@ -1,4 +1,4 @@
-(defproject psiclj "0.2.3"
+(defproject psiclj "0.2.2"
   :dependencies [
         [org.clojure/tools.cli "1.0.206"]  ; parse-opts
         [org.postgresql/postgresql "42.2.2"]
