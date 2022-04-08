@@ -17,8 +17,13 @@
    [compojure.route :as route]
    ;;[ring.util.resposne :refer [resource-response]]
    [ring.middleware.json :as json]
+   [ring.middleware.params :refer [assoc-query-params params-request]]
    [ring.util.response :as resp]
    [ring.middleware.basic-authentication :refer [wrap-basic-authentication]]
+   ; for params in request query
+   ;[ring.middleware.defaults :refer [wrap-defaults site-defaults]]
+   ;; [compojure.handler :as handler]
+   
    ;; str split DATABASE_URL
    [clojure.string :as str]
    ;; command line args
@@ -130,6 +135,11 @@
   "did we already finish this run?"
   [run-data]
   (-> (DB) (run-by-id run-data) :finished_at nil? not))
+
+(defn worker-already-seen
+  "is this person anywhere in the DB already?"
+  [id]
+  (-> (DB) (n_sessions {:id id}) :n (> 0)))
 
 (defn write-run-json
   "write out run info into a json file. TODO: save to results folder"
@@ -288,11 +298,21 @@
    pages
    (wrap-routes #'task-run-context json/wrap-json-response)
    (route/files "/" {:root (str @path-root "/extra") :allow-symlinks? true})
-   (GET "/ad" []  (send-built-in "ad.html"))
+   (GET "/ad" req
+        (let [req (params-request req)
+              id (get-in req [:params "workerId"])
+              seen (worker-already-seen id)]
+          (if seen
+            (resp/response "<html><body>Sorry, you've already done this!</body></html>")
+            ;; (resp/response (str "<html><body>req:" id "<br>seen:" seen "</body></html>"))
+            (send-built-in "ad.html"))))
    (GET "/consent.html" []  (send-built-in "consent.html"))
    (GET "/mturk.js" []  (send-built-in "mturk.js"))
    (localhost-bypass-auth db-routes)
-   (route/not-found not-found-fn)))
+   ;; (handler/api)
+   (route/not-found not-found-fn)
+   ;(site-defaults)
+))
 
 
 ;; exercise

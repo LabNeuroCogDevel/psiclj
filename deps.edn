@@ -1,4 +1,6 @@
 {:deps {
+
+        org.clojure/tools.cli {:mvn/version "0.3.5"} 
         ; DB
         org.postgresql/postgresql {:mvn/version "42.2.2"} ; hugsql
         org.clojure/java.jdbc {:mvn/version "0.7.5"}      ; hugsql
@@ -7,9 +9,13 @@
         ;HTTP
         compojure/compojure {:mvn/version "1.6.2"}
         http-kit/http-kit {:mvn/version "2.5.3"}
+        ;javax.servlet/servlet-api {:mvn/version "2.5"} 
+        
         ring/ring-core    {:mvn/version "1.9.4"}
         ring/ring-json    {:mvn/version "0.5.1"}
         ring-basic-authentication/ring-basic-authentication {:mvn/version "1.1.1"}
+
+        ;ring/ring-defaults {:mvn/version "0.3.3"}
         ;clj-http-lite/clj-http-lite {:mvn/version "0.4.3"}
 
         ; saving json

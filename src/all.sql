@@ -60,6 +60,11 @@ select json from run
         run_number = :run and
         timepoint = :timepoint
 
+-- :name n_sessions :? :1
+-- :doc count number of times we've seen this person.
+--      probably useful for denying multiple session from same mturk worker
+select count(*) as n from run where worker_id = :id
+
 
 -- :name most-recent :? :n
 -- :doc find the most recently finished row. :id can be '%'

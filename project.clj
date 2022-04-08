@@ -1,14 +1,17 @@
-(defproject psiclj "0.1.0"
+(defproject psiclj "0.2.3"
   :dependencies [
+        [org.clojure/tools.cli "0.3.5"]  ; lein complains but not actually used by project?
         [org.postgresql/postgresql "42.2.2"]
         [org.clojure/java.jdbc  "0.7.5"]
+        [org.clojure/data.json "2.4.0"]
         [org.xerial/sqlite-jdbc "3.7.2"]
         [com.layerware/hugsql   "0.5.1"]
         [compojure/compojure    "1.6.2"]
         [http-kit/http-kit      "2.5.3"]
         [ring/ring-core         "1.9.4"]
         [ring/ring-json         "0.5.1"]
-        [org.clojure/tools.cli "0.3.5"]  ; lein complains but not actually used by project?
+        [ring-basic-authentication/ring-basic-authentication "1.1.1"]
+        ;[ring/ring-defaults "0.3.3"]
         [org.clj-commons/digest "1.4.100"] ; md5
         ]
   :main psiclj

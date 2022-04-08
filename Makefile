@@ -10,7 +10,7 @@ psiclj.exe: src/psiclj.clj src/*html src/*
 	# for windows
 	./compile.bat
 
-psiclj.jar: src/psiclj.clj src/*html src/*
+psiclj.jar: deps.edn src/*
 	clj -A:uberjar
 
 .loaddburl:
