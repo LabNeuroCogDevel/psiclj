@@ -1,6 +1,6 @@
 (defproject psiclj "0.2.3"
   :dependencies [
-        [org.clojure/tools.cli "0.3.5"]  ; lein complains but not actually used by project?
+        [org.clojure/tools.cli "1.0.206"]  ; parse-opts
         [org.postgresql/postgresql "42.2.2"]
         [org.clojure/java.jdbc  "0.7.5"]
         [org.clojure/data.json "2.4.0"]

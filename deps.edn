@@ -1,6 +1,6 @@
 {:deps {
 
-        org.clojure/tools.cli {:mvn/version "0.3.5"} 
+        org.clojure/tools.cli {:mvn/version "1.0.206"}    ; parse opts
         ; DB
         org.postgresql/postgresql {:mvn/version "42.2.2"} ; hugsql
         org.clojure/java.jdbc {:mvn/version "0.7.5"}      ; hugsql
@@ -43,6 +43,6 @@
                           {clj.native-image/clj.native-image
                            {:git/url "https://github.com/taylorwood/clj.native-image.git"
                             :sha "7708e7fd4572459c81f6a6b8e44c96f41cdd92d4"}}}
-           :uberjar {:extra-deps {uberdeps {:mvn/version "1.1.0"}}
+           :uberjar {:extra-deps {uberdeps/uberdeps {:mvn/version "1.1.0"}}
                      ;:main "psiclj" ;  "no manifest" error with windows native-image. this doesn't help
                      :main-opts  ["-m" "uberdeps.uberjar" "--target" "psiclj.jar"]}}}

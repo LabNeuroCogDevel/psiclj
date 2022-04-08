@@ -39,16 +39,10 @@
 
 ;; global settings
 ;; this can be modified with command arguments
-(def VERSION
-  "pushed into DB so specific code can be annotated.
-   think git checksum or tag"
-  (atom "20211024-taskname"))
-(def TASKNAME (atom "task"))
-(def path-root
-  "where to find resources like css javascript etc.
-  likely out/ if in same dir as clojurescript project main"
-   (atom "out/")
-  )
+(def OPTIONS (atom {:version "nover"
+                    :taskname "task"
+                    :path-root "out/"
+                    :allow-repeat false}))
 
 
 ;; DB
@@ -191,17 +185,17 @@
 (defroutes task-run-context
   (context "/:id/:task/:timepoint/:run"
            req
-           (task-run (assoc-in req [:params :version] @VERSION)))
+           (task-run (assoc-in req [:params :version] (:version  @OPTIONS))))
 
   ;; return json with all tasks (currently just one)
   ;; TODO: report more than one task. need major overhall
-  (GET "/tasks" [] (resp/response {:tasks [@TASKNAME]}))
+  (GET "/tasks" [] (resp/response {:tasks [(:taskname @OPTIONS)]}))
   (GET "/anchor/:task" [task] (resp/response {:anchors (get-anchor (DB) {:task task})})))
 
 (defn quick-info "where are we. used to debug"
   [req]
   (str  "  \npwd=" (-> (java.io.File. ".") .getAbsolutePath)
-        "  \nroot=" @path-root
+        "  \nroot=" (:path-root @OPTIONS)
         "  \nreq=" (:uri req)))
 
 ;; 20211008 these simple functions were source of great headache
@@ -217,7 +211,7 @@
   or what's stored in the resources of compiled applicaiton
   used for not-found page and /ad"
   [fname]
-  (let [path (io/file @path-root fname)
+  (let [path (io/file (:path-root @OPTIONS) fname)
         ;; if no file, use resource (for not-found.html)
         path (if (-> path .exists)
                path
@@ -242,7 +236,7 @@
   route/resources strips of the first leading / as we want it.
   so give it ^//"
   [& args]
-  {:root @path-root :allow-symlinks? true})
+  {:root (:path-root @OPTIONS) :allow-symlinks? true})
 
 
 ;; db access is behind basic auth
@@ -275,8 +269,8 @@
            (GET "/" []
                 ;; TODO: try to get agent and maybe viewport from browser
                 ;; for :info
-                (let [run-info (assoc (:params req) :info "" :version @VERSION)
-                      index (str (io/file @path-root "index.html"))
+                (let [run-info (assoc (:params req) :info "" :version (:version @OPTIONS))
+                      index (str (io/file (:path-root @OPTIONS) "index.html"))
                       DB (DB)]
                   (if (already-done?  run-info)
                     (resp/response "already done!")
@@ -297,12 +291,12 @@
   (routes
    pages
    (wrap-routes #'task-run-context json/wrap-json-response)
-   (route/files "/" {:root (str @path-root "/extra") :allow-symlinks? true})
+   (route/files "/" {:root (str (:path-root @OPTIONS) "/extra") :allow-symlinks? true})
    (GET "/ad" req
         (let [req (params-request req)
               id (get-in req [:params "workerId"])
               seen (worker-already-seen id)]
-          (if seen
+          (if (and (not (:allow-repeat @OPTIONS)) seen)
             (resp/response "<html><body>Sorry, you've already done this!</body></html>")
             ;; (resp/response (str "<html><body>req:" id "<br>seen:" seen "</body></html>"))
             (send-built-in "ad.html"))))
@@ -330,8 +324,8 @@
 
 ;; Main
 (defn check-file [fname]
-    (when (-> @path-root (io/file fname) .exists not)
-      (println (str "cannot find '" @path-root "/" fname "'. consier using -r"))
+  (when (-> (:path-root @OPTIONS) (io/file fname) .exists not)
+      (println (str "cannot find '" (:path-root @OPTIONS) "/" fname "'. consier using -r"))
       (System/exit 1)))
 
 (defonce server-stop-fn (atom nil))
@@ -348,18 +342,20 @@
                :default "3001"]
               ["-r" "--root-path PATH/out. TODO: DOESNT WORK. always looks for out relative to binary"
                "path to index.html, not-found.html, resources, extra/ root"
-               :default @path-root]
+               :default (:path-root @OPTIONS)]
               ["-v" "--version VERSION"
                "set code version inserted in DB"
-               :default @VERSION]
+               :default (:version  @OPTIONS)]
               ["-t" "--taskname TASKNAME"
                "set the task name in id/TASKNAME/timepont/run not-found.html"
-               :default @TASKNAME]
-              ["-d" "--database DB"
-               (str "psql url. looks to DATABASE_URL first. "
-                    "like postgres://user:pass@host:port/db. "
-                    "TODO: IMPLEMENT. also see PSQLSSLQUERY='sslmode=disable'")
-               :default nil]
+               :default (:taskname @OPTIONS)]
+              ;; ["-d" "--database DB"
+              ;;  (str "psql url. looks to DATABASE_URL first. "
+              ;;       "like postgres://user:pass@host:port/db. "
+              ;;       "TODO: IMPLEMENT. also see PSQLSSLQUERY='sslmode=disable'")
+              ;;  :default nil]
+              [ "-a" "--allow-repeat" "Allow workers to repeat task in /ad"
+               :default (:allow-repeat @OPTIONS)]
               ["-h" "--help" "This message" :default false]]
         {:keys [options arguments summary errors]} (parse-opts args opts)
         port (Integer/parseInt (or (System/getenv "PORT")
@@ -369,12 +365,11 @@
     ;; (print (str "have not found?" (not (nil? (io/resource "not-found.html"))) "\n"))
 
     ;; update settings from command parsing
-    (reset! VERSION (:version options))
-    (reset! path-root (:root-path options))
-    (reset! TASKNAME  (:taskname options))
-    (println "settings: v =" @VERSION
-             "; r =" @path-root
-             "; t =" @TASKNAME)
+    (swap! OPTIONS assoc :version (:version options))
+    (swap! OPTIONS assoc :path-root  (:root-path options))
+    (swap! OPTIONS assoc :taskname  (:taskname options))
+    (swap! OPTIONS assoc :allow-repeat  (:allow-repeat options))
+    (println "settings:" @OPTIONS)
 
     ;; shouldn't continue if there isn't anything to serve
     (check-file "index.html")
