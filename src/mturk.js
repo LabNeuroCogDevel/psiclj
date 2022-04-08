@@ -91,9 +91,9 @@ async function append_play_link(){
    params['anchor'] = await get_anchor(params['task'])
    url = params_to_taskurl(params)
    console.log(params)
-   anchors = params.anchor  + "&noinstruction&fewtrials"
+   anchors = (params.anchor!==undefined?params.anchor:"")  // + "&noinstruction&fewtrials"
    cmd = "popup_nofrills('" + url +"#"+ anchors +"', 1024, 768)"
-   change_to_play_button(cmd, params.external, params.assignmentId)
+   change_to_play_button(cmd, params.external, params.timepoint)
 }
 
 

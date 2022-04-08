@@ -190,7 +190,12 @@
   ;; return json with all tasks (currently just one)
   ;; TODO: report more than one task. need major overhall
   (GET "/tasks" [] (resp/response {:tasks [(:taskname @OPTIONS)]}))
-  (GET "/anchor/:task" [task] (resp/response {:anchors (get-anchor (DB) {:task task})})))
+
+  ;; get-anchor returns {:anchor "option1=value&option2=value"} from permutations table
+  ;; but make null empty string so json parses correctly ""
+  (GET "/anchor/:task" [task]
+       (let [task-anchor (get (get-anchor (DB) {:task task}) :anchor "")]
+         (resp/response {:anchor task-anchor}))))
 
 (defn quick-info "where are we. used to debug"
   [req]
