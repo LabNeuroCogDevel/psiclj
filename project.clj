@@ -1,8 +1,8 @@
 (defproject psiclj "0.1.0"
   :dependencies [
         [org.postgresql/postgresql "42.2.2"]
-        [org.clojure/java.jdbc  "0.7.5"]
-        [org.xerial/sqlite-jdbc "3.7.2"]
+        [org.clojure/java.jdbc  "0.7.12"]
+        [org.xerial/sqlite-jdbc "3.36.0.3"]
         [com.layerware/hugsql   "0.5.1"]
         [compojure/compojure    "1.6.2"]
         [http-kit/http-kit      "2.5.3"]
