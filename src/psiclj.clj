@@ -82,9 +82,10 @@
     (if db
         {:subprotocol "postgresql"
          :subname (db-to-jdbc db)}
-        {:subprotocol "sqlite"
-         :classname "org.sqlite.JDBC"
-         :subname "psiclj.sqlite3"})))
+        (do (Class/forName "org.sqlite.JDBC") 
+            {:subprotocol "sqlite"
+             :classname "org.sqlite.JDBC"
+             :subname "psiclj.sqlite3"}))))
 
 (defn DB [] (get-db-params))
 

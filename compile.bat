@@ -10,6 +10,8 @@ set ROOTPATH=L:\Applications\JavaDevelGraalVM\
 set GRAALVM_HOME=%ROOTPATH%\graalvm-ce-java17-22.0.0.2
 set JAVA_HOME=%GRAALVM_HOME%\bin
 set PATH=%PATH%;%GRAALVM_HOME%\bin;%ROOTPATH%
+SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
+
 
 
 WHERE cl.exe
