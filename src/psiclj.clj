@@ -94,8 +94,10 @@
 ;; middleware. if we are on local host we dont need passwords and
 ;; we can save json files per run when finished (safer than everything in one sqlite file?)
 (defn trusted-host? "trust localhost" [remote-addr]
-  (print (str "remote-addr:" remote-addr))
-  (= (str remote-addr) "127.0.0.1"))
+  (print (str "remote-addr:" remote-addr "\n"))
+  ;(= (str remote-addr) "127.0.0.1")
+  (contains? #{"0:0:0:0:0:0:0:1" "0.0.0.0" "127.0.0.1" "localhost"} (str remote-addr))
+  )
 (defn auth?
   "authentiate for db access. Basic auth. password only. must be in env HTTPDBPASS"
   [name pass]
