@@ -17,8 +17,13 @@
    [compojure.route :as route]
    ;;[ring.util.resposne :refer [resource-response]]
    [ring.middleware.json :as json]
+   [ring.middleware.params :refer [assoc-query-params params-request]]
    [ring.util.response :as resp]
    [ring.middleware.basic-authentication :refer [wrap-basic-authentication]]
+   ; for params in request query
+   ;[ring.middleware.defaults :refer [wrap-defaults site-defaults]]
+   ;; [compojure.handler :as handler]
+   
    ;; str split DATABASE_URL
    [clojure.string :as str]
    ;; command line args
@@ -26,22 +31,18 @@
    [clojure.java.io :as io]
    ;; saving to file
    [clojure.data.json :as datajson]
+   ;; completion code
+   [clj-commons.digest :refer [md5]]
    )
   (:gen-class))
 
 
 ;; global settings
 ;; this can be modified with command arguments
-(def VERSION
-  "pushed into DB so specific code can be annotated.
-   think git checksum or tag"
-  (atom "20211024-taskname"))
-(def TASKNAME (atom "task"))
-(def path-root
-  "where to find resources like css javascript etc.
-  likely out/ if in same dir as clojurescript project main"
-   (atom "out/")
-  )
+(def OPTIONS (atom {:version "nover"
+                    :taskname "task"
+                    :path-root "out/"
+                    :allow-repeat false}))
 
 
 ;; DB
@@ -130,6 +131,11 @@
   [run-data]
   (-> (DB) (run-by-id run-data) :finished_at nil? not))
 
+(defn worker-already-seen
+  "is this person anywhere in the DB already?"
+  [id]
+  (-> (DB) (n_sessions {:id id}) :n (> 0)))
+
 (defn write-run-json
   "write out run info into a json file. TODO: save to results folder"
   [{:keys [id task version run timepoint] :as run-info}]
@@ -140,6 +146,11 @@
     (with-open [out (io/writer fname )] (.write out data))
     fname))
 
+(defn md5-data
+  "generate code for compeltion. also see psql specific md5-finish"
+  [run-info]
+  (let [finished_at_str (string-for-md5-finish (DB) run-info)]
+    (md5 (:runinfostr finished_at_str))))
 
 ;; HTTP
 ;; https://github.com/taylorwood/lein-native-image/tree/master/examples/http-api
@@ -170,21 +181,27 @@
          (let [status (finish-run (DB) (:params req))]
            ;; if we are running locally (trusted), then also save a json file
            (if (trusted-host? (:remote-addr req)) (write-run-json (:params req)))
-           (resp/response {:ok status})))))
+           (resp/response {:ok status :code (subs ( md5-data (:params req)) 0 5)})))))
 
 (defroutes task-run-context
   (context "/:id/:task/:timepoint/:run"
            req
-           (task-run (assoc-in req [:params :version] @VERSION)))
+           (task-run (assoc-in req [:params :version] (:version  @OPTIONS))))
 
   ;; return json with all tasks (currently just one)
   ;; TODO: report more than one task. need major overhall
-  (GET "/tasks" [] (resp/response {:tasks [@TASKNAME]})))
+  (GET "/tasks" [] (resp/response {:tasks [(:taskname @OPTIONS)]}))
+
+  ;; get-anchor returns {:anchor "option1=value&option2=value"} from permutations table
+  ;; but make null empty string so json parses correctly ""
+  (GET "/anchor/:task" [task]
+       (let [task-anchor (get (get-anchor (DB) {:task task}) :anchor "")]
+         (resp/response {:anchor task-anchor}))))
 
 (defn quick-info "where are we. used to debug"
   [req]
   (str  "  \npwd=" (-> (java.io.File. ".") .getAbsolutePath)
-        "  \nroot=" @path-root
+        "  \nroot=" (:path-root @OPTIONS)
         "  \nreq=" (:uri req)))
 
 ;; 20211008 these simple functions were source of great headache
@@ -200,7 +217,7 @@
   or what's stored in the resources of compiled applicaiton
   used for not-found page and /ad"
   [fname]
-  (let [path (io/file @path-root fname)
+  (let [path (io/file (:path-root @OPTIONS) fname)
         ;; if no file, use resource (for not-found.html)
         path (if (-> path .exists)
                path
@@ -225,7 +242,7 @@
   route/resources strips of the first leading / as we want it.
   so give it ^//"
   [& args]
-  {:root @path-root :allow-symlinks? true})
+  {:root (:path-root @OPTIONS) :allow-symlinks? true})
 
 
 ;; db access is behind basic auth
@@ -258,8 +275,8 @@
            (GET "/" []
                 ;; TODO: try to get agent and maybe viewport from browser
                 ;; for :info
-                (let [run-info (assoc (:params req) :info "" :version @VERSION)
-                      index (str (io/file @path-root "index.html"))
+                (let [run-info (assoc (:params req) :info "" :version (:version @OPTIONS))
+                      index (str (io/file (:path-root @OPTIONS) "index.html"))
                       DB (DB)]
                   (if (already-done?  run-info)
                     (resp/response "already done!")
@@ -280,11 +297,22 @@
   (routes
    pages
    (wrap-routes #'task-run-context json/wrap-json-response)
-   (route/files "/" {:root (str @path-root "/extra") :allow-symlinks? true})
-   (GET "/ad" []  (send-built-in "ad.html"))
+   (route/files "/" {:root (str (:path-root @OPTIONS) "/extra") :allow-symlinks? true})
+   (GET "/ad" req
+        (let [req (params-request req)
+              id (get-in req [:params "workerId"])
+              seen (worker-already-seen id)]
+          (if (and (not (:allow-repeat @OPTIONS)) seen)
+            (resp/response "<html><body>Sorry, you've already done this!</body></html>")
+            ;; (resp/response (str "<html><body>req:" id "<br>seen:" seen "</body></html>"))
+            (send-built-in "ad.html"))))
+   (GET "/consent.html" []  (send-built-in "consent.html"))
    (GET "/mturk.js" []  (send-built-in "mturk.js"))
    (localhost-bypass-auth db-routes)
-   (route/not-found not-found-fn)))
+   ;; (handler/api)
+   (route/not-found not-found-fn)
+   ;(site-defaults)
+))
 
 
 ;; exercise
@@ -292,16 +320,18 @@
   (def run-data {:id "will" :task "test" :version "x" :run 1 :timepoint 1 :json "[]" :info "[]"})
   (let [DB (DB)]
   (create-run-table DB)
+  (create-permutation-lookup-table DB)
   (already-done? run-data)
   (create-run DB (assoc run-data :info "[{system: \"none\"}]"))
   (upload-json DB (assoc run-data :json "[{data: [1,3]}]"))
-  (finish-run DB run-data)))
+  (finish-run DB run-data)
+  (md5-data run-data)))
 
 
 ;; Main
 (defn check-file [fname]
-    (when (-> @path-root (io/file fname) .exists not)
-      (println (str "cannot find '" @path-root "/" fname "'. consier using -r"))
+  (when (-> (:path-root @OPTIONS) (io/file fname) .exists not)
+      (println (str "cannot find '" (:path-root @OPTIONS) "/" fname "'. consier using -r"))
       (System/exit 1)))
 
 (defonce server-stop-fn (atom nil))
@@ -318,18 +348,20 @@
                :default "3001"]
               ["-r" "--root-path PATH/out. TODO: DOESNT WORK. always looks for out relative to binary"
                "path to index.html, not-found.html, resources, extra/ root"
-               :default @path-root]
+               :default (:path-root @OPTIONS)]
               ["-v" "--version VERSION"
                "set code version inserted in DB"
-               :default @VERSION]
+               :default (:version  @OPTIONS)]
               ["-t" "--taskname TASKNAME"
                "set the task name in id/TASKNAME/timepont/run not-found.html"
-               :default @TASKNAME]
-              ["-d" "--database DB"
-               (str "psql url. looks to DATABASE_URL first. "
-                    "like postgres://user:pass@host:port/db. "
-                    "TODO: IMPLEMENT. also see PSQLSSLQUERY='sslmode=disable'")
-               :default nil]
+               :default (:taskname @OPTIONS)]
+              ;; ["-d" "--database DB"
+              ;;  (str "psql url. looks to DATABASE_URL first. "
+              ;;       "like postgres://user:pass@host:port/db. "
+              ;;       "TODO: IMPLEMENT. also see PSQLSSLQUERY='sslmode=disable'")
+              ;;  :default nil]
+              [ "-a" "--allow-repeat" "Allow workers to repeat task in /ad"
+               :default (:allow-repeat @OPTIONS)]
               ["-h" "--help" "This message" :default false]]
         {:keys [options arguments summary errors]} (parse-opts args opts)
         port (Integer/parseInt (or (System/getenv "PORT")
@@ -339,12 +371,11 @@
     ;; (print (str "have not found?" (not (nil? (io/resource "not-found.html"))) "\n"))
 
     ;; update settings from command parsing
-    (reset! VERSION (:version options))
-    (reset! path-root (:root-path options))
-    (reset! TASKNAME  (:taskname options))
-    (println "settings: v =" @VERSION
-             "; r =" @path-root
-             "; t =" @TASKNAME)
+    (swap! OPTIONS assoc :version (:version options))
+    (swap! OPTIONS assoc :path-root  (:root-path options))
+    (swap! OPTIONS assoc :taskname  (:taskname options))
+    (swap! OPTIONS assoc :allow-repeat  (:allow-repeat options))
+    (println "settings:" @OPTIONS)
 
     ;; shouldn't continue if there isn't anything to serve
     (check-file "index.html")
@@ -353,7 +384,8 @@
     ;; test out the DB (or die w/error)
     (let [DB (DB)]
       (println (str "creating run table on " DB))
-      (create-run-table DB))
+      (create-run-table DB)
+      (create-permutation-lookup-table DB))
 
     ;; serve it up
     ;; kill if already running (repl)

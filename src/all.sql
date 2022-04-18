@@ -6,7 +6,9 @@ create table if not exists run (
   worker_id  text not null,
   task_name  text not null default 'card',
   run_number varchar(2) not null default '1',
-  timepoint  varchar(2) not null default '1',
+  -- tp prev varchar(2). now text to use as mturk's "assignmentId"
+  -- ALTER TABLE run ALTER COLUMN timepoint TYPE text;
+  timepoint  text not null default '1',
   version    text not null,
   json       text,
   system_info text,
@@ -15,6 +17,17 @@ create table if not exists run (
   -- currently not useful
   --FOREIGN KEY(worker_id) REFERENCES worker(worker_id),
   PRIMARY KEY (worker_id, task_name, version, run_number, timepoint)
+)
+
+-- :name create-permutation-lookup-table
+-- :command :execute
+-- :result :raw
+-- :doc Create permutations table for taskname (HITId) to counterbalance hash/anchor
+create table if not exists permutations (
+  task_name  text not null,
+  anchor text not null default ''
+  -- psql requires task_name to be unique
+  -- FOREIGN KEY(task_name) REFERENCES run(task_name)
 )
 
 -- :name create-worker-table
@@ -46,6 +59,11 @@ select json from run
 	version = :version and
         run_number = :run and
         timepoint = :timepoint
+
+-- :name n_sessions :? :1
+-- :doc count number of times we've seen this person.
+--      probably useful for denying multiple session from same mturk worker
+select count(*) as n from run where worker_id = :id
 
 
 -- :name most-recent :? :n
@@ -98,3 +116,30 @@ update run set finished_at = current_timestamp
 	version = :version and
         run_number = :run and
         timepoint = :timepoint
+
+
+-- :name md5-finish :? :1
+-- :doc get 5 digit code from md5sum of fininsh
+select left(md5(finished_at||json),5)
+from run
+where worker_id = :id and
+        task_name = :task and
+	version = :version and
+        run_number = :run and
+        timepoint = :timepoint
+
+-- :name string-for-md5-finish :? :1
+-- :doc get 5 digit code from md5sum of fininsh
+select finished_at||json as runinfostr
+from run
+where worker_id = :id and
+        task_name = :task and
+	version = :version and
+        run_number = :run and
+        timepoint = :timepoint
+
+
+-- :name get-anchor :? :1
+-- :doc anchors to use with this task_name (likey mturk HITId)
+select anchor from permutations
+where task_name like :task

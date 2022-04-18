@@ -7,3 +7,4 @@ psiclj.sqlite3
 .localdburl
 psiclj-heroku
 aws.ini
+node_modules/

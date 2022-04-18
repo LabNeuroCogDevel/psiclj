@@ -7,25 +7,35 @@ A portable http server with a simple API designed for experiment presentation. B
 Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/article/10.3758/s13428-015-0642-8][web]], [[https://github.com/NYUCCL/psiTurk][github]])
 
 ** Goals
-   * Present an existing javascript/browser based experiment and record responses to a database. 
+   * Present an existing javascript/browser based experiment and record responses to a database.
    * Run on cheap/free web hosting (heroku, openshift, self-host) with an eye toward integrating with Amazon Turk
    * Easily install and run within software-restricted hospital environments (MS Windows, user level permissions only)
-   * Easy development on linux (unlike, say EPrime)
+   * Development on any OS (unlike, say EPrime)
 
 ** Usage
 *** Server
 
     - you should already have a javascript task in ~out/~ with at least an ~index.html~. The built-in ~not-found.html~ when there is no ~out/not-found.html~
+       * besides index and not-found, all files in ~out/~ will be rendered at the ~/id/task/timepoint/run/~ endpoint
+       * put other root level media/pages (e.g. global css and js) in ~out/extra/~ . ~out/extra/mystyle.css~ will be resolve from ~/mystyle.css~
     - start server (see `psiclj -h` for changing port and root path)
     - open in browser
 
-**** Development version 
+**** Environment variables 
+     These variables will be used if exported. PORT and DATABASE_URL implemented for heroku. 
+     HTTPDBPASS used to protect /db and / route. if unset, they will be inaccessible.
+ | PORT=3002                                          | http server port                     |
+ | DATABASE_URL=postgres://user:x@localhost:5432/mydb | how to connect to db                 |
+ | HTTPDBPASS=mylocalpass                             | access index, not-found.html and /db |
+ | PSQLSSLQUERY=sslmode=disable                       | useful for devel db                  |
+
+**** Development version
      Minimally, you need a ~out/index.html~ file before running:
 
      #+begin_src bash
        clojure -m psiclj
      #+end_src
-    
+
      then browse to http://localhost:3001/
 **** Run locally without command line fiddling
 ***** Clickable Windows Icon to run
@@ -36,22 +46,23 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
       specify all the command options in e.g. ~mytask.bat~ and place on the desktop
 ***** TODO use file picker/gui from java
       * consider reading from ini/settings for many tasks? (present on index page)
-      * might be good to have a gui where a close button exists
+      * might be good to have a gui with a close button to stop instead of an open cmd.exe/bat window
 
 **** Run Hosted
 ***** heroku buildpack
       see https://github.com/LabNeuroCogDevel/choice-landscape (esp `Procfile`)
 
       #+begin_src bash
-	heroku buildpacks:add https://github.com/LabNeuroCogDevel/psiclj.git
+        heroku buildpacks:add https://github.com/LabNeuroCogDevel/psiclj.git
         heroku addons:create  heroku-postgresql
-	echo "web: psiclj-heroku -r out/ -v myversionid -t mytaskname" > Procfile
+        echo "web: psiclj-heroku -r out/ -v myversionid -t mytaskname" > Procfile
+        heroku config:set HTTPDBPASS='p@sw0'
       #+end_src
 
       * must setup postgresql (sqlite file will not be on a persistent file system)
-      * default setup looks to environment for ~PORT~ and ~DATABASE_URL~. 
+      * default setup looks to environment for ~PORT~ and ~DATABASE_URL~.
       * if ~HTTPDBPASS~ is set, the ~/db~ will also be accessible. username is ignored
-        
+
 ***** self host
       run right from clojure as startup time is unlikely to be the issue it is with free dynamo's from heroku. set ~PORT=80~ and use the default sqlite3 backend, no postgresql needed.
 
@@ -64,26 +75,41 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
     Running ~psiclj~ alone doesn't do much. You'll likely want a javascript task to make use of the very simple API.
     * The server looks for ~index.html~ at a specified directory (default ~out/~) and serves it at "localhost:port/id/task/timepoint/run/".
     * All resources should use relative paths. Do not use a leading slash.  like ~<script src="mytask.js">~ NOT ~<script src="/mytask.js">~
-    * API: all HTTP POST requests (also relative) can be made to 
+    * API: all HTTP POST requests (also relative) can be made to
       | response | expects json body. upserts into db. expect cumulative responses, e.g each feedback period, send all responses so far. |
       | info     | ideally system info like screen size, browser agent                                                                   |
       | finish   | any body. disables using same /id/task/timepoint/run# combination again                                               |
 
 **** Library suggestions
-    There are a few libaries that can aid in writing the experiment to be served by ~psiclj~ 
+    There are a few libaries that can aid in writing the experiment to be served by ~psiclj~
      * [[https://www.jspsych.org][jsPsych]] - many plugins
      * [[https://github.com/psychopy/psychojs][psychojs]] - likely generated by psychopy code builder.
      * generic game frameworks
        * clojurescript (w/figwheel and devcards! see [[https://github.com/bhauman/flappy-bird-demo-new][flappy-bird-demo]] )
        * https://elm-lang.org/
 
+
+*** Permute task settings
+    Task settings can be associated with each task name, and pushed onto the anchor part of the url (or used internally by the task javascript). The table ~permutations~ has columns ~task_name~ and ~anchor~ and a request to ~/anchor/:task~ returns json like ~{:anchor "whatever&is=stored&in_db"}~.
+
+    By default, this is used by ~ad.html~ (via ~mturk.js~) to set the pop up window's anchor url part. Paired with DB row entries for mturk HIT IDs, this can be used to run different settings across amazon turk.
+
+
+   Paired with a javascript wrapper/dispatcher, this could also be used to run multiple/separate tasks from a single server instance.
+
+
 ** Limitations
    * psiTurk has much better documentation and integration with amazon turk
 
 ** Mechanical Turk
+   ExternalQuestion provides an https "ad" url to be loaded *within an iframe on the mturk site*.
+   The provide url/frame serves 3 separate goals depending on how it is accessed:
+   1. advertise the Human Intelligence Task (assignmentId=ASSIGNMENT_ID_NOT_AVAILABLE)
+   2. launch the HIT (assignmentId=abc123......)
+   3. submit completed work (form POST to externalSubmit, submit page excutes javascript referencing ~parent~ to escape the iframe)
 
-*** Background
-    The pages hosted by ~psiclj~ can be run as an [[https://docs.aws.amazon.com/AWSMechTurk/latest/AWSMturkAPI/ApiReference_ExternalQuestionArticle.html][~ExternalQuestion~]] but there is [[https://blog.mturk.com/upcoming-changes-to-the-mturk-requester-website-and-questionform-data-format-f7c3238be58c][no longer]] a way to configure that on mturk's web interface. It must be created using the API. ~psiturk~ does this with the ~hit create~ command. more info in psiturk/amt_services.py
+*** ExternalQuestion Setup
+    The pages hosted by ~psiclj~ can be run as an [[https://docs.aws.amazon.com/AWSMechTurk/latest/AWSMturkAPI/ApiReference_ExternalQuestionArticle.html][~ExternalQuestion~]] but there is [[https://blog.mturk.com/upcoming-changes-to-the-mturk-requester-website-and-questionform-data-format-f7c3238be58c][no longer]] a way to configure that on mturk's web interface. It must be created using the API. ~psiturk~ does this with the ~hit create~ command. See the mturk docs and psiturk/amt_services.py
     #+begin_src python
          schema_url = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2006-07-14/ExternalQuestion.xsd"
          template = '<ExternalQuestion xmlns="%(schema_url)s"><ExternalURL>%%(external_url)s</ExternalURL><FrameHeight>%%(frame_height)s</FrameHeight></ExternalQuestion>' % vars()
@@ -96,22 +122,57 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
  The provided ~external_url~ is embedded in a frame and appends  ~?assignmentId=...&hitId=...&turkSubmitTo=...&workerId=~
  Initially, the preview will set ~assignmentId=ASSIGNMENT_ID_NOT_AVAILABLE~
 
- After finishing, mturk expects a POST request that must include ~assignmentId~. post back URL depends on sandbox status (also in turkSubmitTo)
+ After finishing, mturk expects a [[https://docs.aws.amazon.com/AWSMechTurk/latest/AWSMturkAPI/ApiReference_ExternalQuestionArticle.html#ApiReference_ExternalQuestionArticle-the-external-form-the-form-action][POST request]] that must include ~assignmentId~. The post back URL depends on live/sandbox status.
 
- | real    | https://www.mturk.com/mturk/externalSubmit           |
+ | live    | https://www.mturk.com/mturk/externalSubmit           |
  | sandbox | https://workersandbox.mturk.com/mturk/externalSubmit |
 
- A malicious assigned user could figure out the url scheme and skip the task if no server side logic is used to provide a check.
- 
- 
-*** TODO store assignmentId in the timepoint column of run
-    need to adjust schema so timepoint is varchar?
+
+ The POST must include at least two fields (e.g. [[https://stackoverflow.com/questions/29969245/amazon-mechanical-turk-externalsubmit-error]["foo=1"]] in addition to assignmentId) and be **from within the iframe** -- not from e.g. a popup window. mturk's externalSubmit page runs ~parent.postMessage~ to break out of the iframe.
+
+**** Provided routes
+     This pages are provided but will use files of the same name in ~extra/~ if they exist.
+     | ad.html      | preview, consent, launch task popup|
+     | consent.html | data use and risk information |
+     | mturk.js     | provides ~taskCompleteCode~ and functions for getting anchor permutations for a given HIT|
+
+***** Consent
+      You almost certainly will want to use your own consent language.
+      Save your own html to ~out/extra/consent.html~
+
+      alternatively, you can copy ~cp ad.html out/extra/~ and skip the consent all together with the change
+      #+BEGIN_SRC diff
+ -<body onload="add_consent()">
+ +<body onload="append_play_link()">
+      #+END_SRC
+
+You'll likely want to change the text there or in ~mturk.js~ too
+
+
+
+**** Popup/popout window
+     Running a task from within the iframe might be too constrained. It's easy to launch a popup window but amazon wants all the interactions to happen within the iframe.
+  If in a breakout popup, the javascript ~winddow.opener~ references the original iframe. psiturk uses ~window.opener.location.reload(true)~. This projects ~mturk.js~ has a function to auto-submit from a popup, used like ~window.opener.taskCompleteCode("xyz12")~
+
+*** mTurk vs local data schema
+    |turk          | local     |
     | workerId     | worker_id |
     | hitID        | task      |
     | assignmentId | timepoint |
- 
+
+
+*** external tools
+#+begin_src bash
+  # using psyturk
+  psiturk hit create 10 2.50 24 # 10 workers at $2.50. have 24hours. must have/edit config.txt
+  psiturk hit list |grep pending # pending when looking at ad in iframe.
+  # aws python tool
+  turksand(){ aws mturk --endpoint https://mturk-requester-sandbox.us-east-1.amazonaws.com "$@"; }
+  turksand list-hits|jq '.HITs|.[]|.HITId'|xargs -r -I{} turksand  list-assignments-for-hit --hit-id={}
+
+#+end_src
 ** Data interface
-  Task metrics and performance values must be calculated elsewhere. psiclj doesn't know anything about the structure of any task. 
+  Task metrics and performance values must be calculated elsewhere. psiclj doesn't know anything about the structure of any task.
   Responses are expected to be uploaded to ~/response~ and will be in the ~json~ column of the ~run~ table.
 
 *** ~/db~ shows most recent runs
@@ -122,15 +183,15 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
     Presumably, when running on localhost, there is not internet access. Collecting run-info named json files might be easier than merging sqlite databases.
 
 ** Hacking
-   
+
 *** Build
     see ~Makefile~. depends on clojure. building an executable requires native image from graalvm. Setup for heroku in ~Dockerfile.heroku~
-    
+
 **** windows
      ~compile.bat~ outlines a nearly (20220205WF) working windows build pipeline using the free 4Gb IEUser virtualbox image.
 
      also see https://github.com/babashka/babashka-sql-pods/blob/master/bb.edn
-     
+
 *** Databases
    ~postgresql~ and ~sqlite~ (default) are available as of 20211009. Where the DBs differ (upsert), there is specific code for each. see ~src/all.sql~. sql file is parsed by hugsql (yesql derivative). ~DATABASE_URL~ environment variable is supported for heroku. When it exists, the server use postgresql. DB libaries complicate generating the graalvm native image (static binary).
 
@@ -145,17 +206,23 @@ Inspired by [[https://psiturk.org/][psiTurk]] ([[https://link.springer.com/artic
      # heroku addons:docs heroku-postgresql
 
    #+end_src
-   
+
 **** sqlite3 native image on linux
     https://github.com/xerial/sqlite-jdbc/issues/584
-    but 
+    but
     https://github.com/mageddo/graalvm-examples/tree/59f1f1bf09894681edfddaa100b4504770ad0685/sqlite
 
 *** resources vs files
     the initial version used ~io/resources~ and bundled task data with the bytecode (uberjar or executable). This is great for providing a single executable for the task, but makes a much less flexible tool. It might be nice to provide a build option for revering back to the everything-all-together bundling. psiTurk uses this approach: clone the whole project and modify what you want.
 
+*** regrets
+    The main driver for this repo is running the same code self-host on the web (mturk and independent recruitment) and a network isolated Windows PC (MRI).
+    ~psiturk~ has done a lot of work to integrate with mturk which turns out to be the most complicated piece. Recreating the same endpoints and reusing the psiturk javascript would have been a more efficient use of development resources.
+
 * TODO
   * add Procfile and heroku documentation
+  * non-defined root level files not seen? would be nice to use figwheel development version
   * and /quit route to shutdown server
-  * counter balance routes (?cb=A, available to window.location, doesn't change routing)
+  * pull task names from permutation table
   * host multiple tasks? would require rework of @TASKNAME @root-path and routing functions
+    - possible in javascript using wrapper/dispatcher on taskname/anchor settings
